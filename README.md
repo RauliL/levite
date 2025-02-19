@@ -8,6 +8,10 @@ that [Vi] users should feel comfortable with.
 [Forth]: https://en.wikipedia.org/wiki/Forth_(programming_language)
 [RPN]: https://en.wikipedia.org/wiki/Reverse_Polish_notation
 
+## Screenshot
+
+![Screenshot](https://raw.github.com/RauliL/levite/main/screenshot.png)
+
 ## Features
 
 - Uses [GNU MPFR] for number crunching.

@@ -142,8 +142,8 @@ render_cell(
   tb_print(
     cell_x_to_screen_x(cell.x),
     cell_y_to_screen_y(cell.y),
-    is_selected ? (TB_BLACK & TB_BOLD) : TB_GREEN,
-    is_selected ? TB_GREEN : TB_DEFAULT,
+    is_selected ? TB_BLACK : TB_GREEN,
+    is_selected ? (TB_GREEN | TB_BRIGHT) : TB_DEFAULT,
     encode(result).c_str()
   );
 
@@ -170,8 +170,8 @@ render_sheet(struct sheet& sheet)
     tb_print(
       cell_x_to_screen_x(sheet.cursor_x),
       cell_y_to_screen_y(sheet.cursor_y),
-      TB_BLACK | TB_BOLD,
-      TB_GREEN,
+      TB_BLACK,
+      TB_GREEN | TB_BRIGHT,
       std::string(CELL_WIDTH, ' ').c_str()
     );
   }
