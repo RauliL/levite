@@ -70,6 +70,7 @@ struct sheet
   using container_type = std::unordered_map<std::string, std::optional<cell>>;
 
   static constexpr int MAX_COLUMNS = 4;
+  static constexpr int MAX_ROWS = 999;
 
   std::optional<std::filesystem::path> filename;
   bool modified;
@@ -102,7 +103,7 @@ struct sheet
 
   bool move_cursor(enum direction direction);
 
-  void load(const std::filesystem::path& path, char separator = ',');
+  bool load(const std::filesystem::path& path, char separator = ',');
 
   bool save(const std::filesystem::path& path, char separator = ',');
 };

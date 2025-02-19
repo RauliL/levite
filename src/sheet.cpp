@@ -38,7 +38,7 @@ static const std::regex CELL_PATTERN("^([A-Z])([0-9]+)$");
 static inline bool
 is_valid(int x, int y)
 {
-  return x >= 0 && x < sheet::MAX_COLUMNS && y >= 0;
+  return x >= 0 && x < sheet::MAX_COLUMNS && y >= 0 && y < sheet::MAX_ROWS;
 }
 
 const char*
@@ -202,8 +202,13 @@ sheet::move_cursor(enum direction direction)
       break;
 
     case direction::down:
-      ++cursor_y;
-      return true;
+      if (cursor_y < MAX_ROWS - 1)
+      {
+        ++cursor_y;
+
+        return true;
+      }
+      break;
 
     case direction::left:
       if (cursor_x > 0)
@@ -227,7 +232,7 @@ sheet::move_cursor(enum direction direction)
   return false;
 }
 
-void
+bool
 sheet::load(const std::filesystem::path& path, char separator)
 {
   using peelo::unicode::encoding::utf8::decode;
@@ -239,13 +244,18 @@ sheet::load(const std::filesystem::path& path, char separator)
   );
   const auto size = doc.GetRowCount();
 
+  if (size > MAX_ROWS)
+  {
+    return false;
+  }
+  grid.clear();
   for (std::size_t i = 0; i < size; ++i)
   {
     const auto row = doc.GetRow<std::string>(i);
 
     if (row.size() > MAX_COLUMNS)
     {
-      return; // TODO: Throw exception.
+      return false;
     }
     for (std::size_t j = 0; j < row.size(); ++j)
     {
@@ -253,6 +263,8 @@ sheet::load(const std::filesystem::path& path, char separator)
     }
   }
   modified = false;
+
+  return true;
 }
 
 static std::string

@@ -36,12 +36,36 @@ using command_callback = void(*)(
 
 static void
 cmd_echo(
-  sheet&,
+  struct sheet&,
   const std::u32string&,
   const std::optional<std::u32string>& arg
 )
 {
   message = arg.value_or(U"");
+}
+
+static void
+cmd_edit(
+  struct sheet& sheet,
+  const std::u32string&,
+  const std::optional<std::u32string>& arg
+)
+{
+  if (arg)
+  {
+    sheet.filename = *arg;
+  }
+  else if (!sheet.filename)
+  {
+    message = U"No filename.";
+    return;
+  }
+  if (sheet.load(*sheet.filename, sheet.separator))
+  {
+    message = U"File loaded.";
+  } else {
+    message = U"Error loading file.";
+  }
 }
 
 static void
@@ -54,7 +78,7 @@ cmd_quit(sheet&, const std::u32string&, const std::optional<std::u32string>&)
 static void
 cmd_write(
   sheet& sheet,
-  const std::u32string& command,
+  const std::u32string&,
   const std::optional<std::u32string>& arg
 )
 {
@@ -79,6 +103,8 @@ static const std::unordered_map<std::u32string, command_callback> commands =
 {
   { U"ec", cmd_echo },
   { U"echo", cmd_echo },
+  { U"e", cmd_edit },
+  { U"edit", cmd_edit },
   { U"q", cmd_quit },
   { U"q!", cmd_quit },
   { U"quit", cmd_quit },
