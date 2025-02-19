@@ -31,7 +31,7 @@
 #include "./sheet.hpp"
 #include "./termbox2.h"
 
-static constexpr int CELL_WIDTH = 9;
+static constexpr int CELL_WIDTH = 10;
 
 std::u32string message;
 
@@ -59,9 +59,9 @@ render_ui()
     tb_set_cell(x, height - 1, ' ', TB_BLACK, TB_GREEN);
   }
   tb_set_cell(7, 0, 'A', TB_BLACK, TB_GREEN);
-  tb_set_cell(16, 0, 'B', TB_BLACK, TB_GREEN);
-  tb_set_cell(25, 0, 'C', TB_BLACK, TB_GREEN);
-  tb_set_cell(34, 0, 'D', TB_BLACK, TB_GREEN);
+  tb_set_cell(17, 0, 'B', TB_BLACK, TB_GREEN);
+  tb_set_cell(27, 0, 'C', TB_BLACK, TB_GREEN);
+  tb_set_cell(37, 0, 'D', TB_BLACK, TB_GREEN);
   for (int y = 0; y < height - 3; ++y)
   {
     tb_printf(0, y + 1, TB_BLACK, TB_GREEN, "% 3d", y + 1);
