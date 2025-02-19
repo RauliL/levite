@@ -69,7 +69,8 @@ cell::evaluate(laskin::context& context) const
 }
 
 sheet::sheet()
-  : separator(',')
+  : modified(false)
+  , separator(',')
   , context(
     [this](const std::u32string& unencoded_name) -> std::optional<laskin::value>
     {
@@ -173,4 +174,5 @@ sheet::load(const std::filesystem::path& path, char separator)
       set(j, i, decode(row[j]));
     }
   }
+  modified = false;
 }

@@ -29,6 +29,7 @@
 
 enum class mode
 {
+  command,
   insert,
   normal,
 };

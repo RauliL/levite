@@ -64,6 +64,7 @@ struct sheet
   static constexpr int MAX_COLUMNS = 4;
 
   std::optional<std::filesystem::path> filename;
+  bool modified;
   char separator;
   container_type grid;
   laskin::context context;
@@ -82,6 +83,7 @@ struct sheet
   inline void set(int x, int y, const laskin::value& value)
   {
     grid[get_cell_name(x, y)] = { x, y, value };
+    modified = true;
   }
 
   void set(int x, int y, const std::u32string& input);

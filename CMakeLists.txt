@@ -21,6 +21,7 @@ FetchContent_MakeAvailable(laskin rapidcsv)
 
 add_executable(
   levite
+  ./src/command.cpp
   ./src/event.cpp
   ./src/main.cpp
   ./src/screen.cpp

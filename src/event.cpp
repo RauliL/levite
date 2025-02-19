@@ -41,6 +41,8 @@ mode current_mode = mode::normal;
 std::u32string input_buffer;
 std::u32string::size_type input_cursor;
 
+void run_command(struct sheet& sheet, const std::u32string& command);
+
 static inline bool
 is_blank()
 {
@@ -64,11 +66,18 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       return;
 
     case TB_KEY_ENTER:
-      if (is_blank())
+      if (current_mode == mode::insert)
       {
-        sheet.erase(sheet.cursor_x, sheet.cursor_y);
-      } else {
-        sheet.set(sheet.cursor_x, sheet.cursor_y, input_buffer);
+        if (is_blank())
+        {
+          sheet.erase(sheet.cursor_x, sheet.cursor_y);
+        } else {
+          sheet.set(sheet.cursor_x, sheet.cursor_y, input_buffer);
+        }
+      }
+      else if (!is_blank())
+      {
+        run_command(sheet, input_buffer);
       }
       input_buffer.clear();
       input_cursor = 0;
@@ -217,10 +226,18 @@ normal_mode(struct sheet& sheet, const tb_event& event)
 
   switch (event.ch)
   {
+    case ':':
+      input_buffer.clear();
+      input_buffer.append(1, U':');
+      input_cursor = 1;
+      current_mode = mode::command;
+      return;
+
     case 'i':
       edit_current_cell(sheet);
       break;
 
+    case 'A':
     case 'I':
       edit_current_cell(sheet, true);
       break;
@@ -241,6 +258,14 @@ normal_mode(struct sheet& sheet, const tb_event& event)
       move(sheet, direction::right);
       break;
 
+    // TODO: 'J' - Join two lines.
+
+    case 'O':
+      move(sheet, direction::up);
+      edit_current_cell(sheet);
+      break;
+
+
     case 'q':
       tb_shutdown();
       std::exit(EXIT_SUCCESS);
@@ -257,11 +282,16 @@ handle_event(struct sheet& sheet)
 
   if (event.type == TB_EVENT_KEY)
   {
-    if (current_mode == mode::insert)
+    switch (current_mode)
     {
-      insert_mode(sheet, event);
-    } else {
-      normal_mode(sheet, event);
+      case mode::command:
+      case mode::insert:
+        insert_mode(sheet, event);
+        break;
+
+      case mode::normal:
+        normal_mode(sheet, event);
+        break;
     }
   }
 

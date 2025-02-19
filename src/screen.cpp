@@ -33,6 +33,8 @@
 
 static constexpr int CELL_WIDTH = 9;
 
+std::u32string message;
+
 inline int
 cell_x_to_screen_x(int x)
 {
@@ -42,7 +44,7 @@ cell_x_to_screen_x(int x)
 inline int
 cell_y_to_screen_y(int y)
 {
-  return y + 2;
+  return y + 1;
 }
 
 static void
@@ -54,15 +56,15 @@ render_ui()
   for (int x = 0; x < width; ++x)
   {
     tb_set_cell(x, 0, ' ', TB_BLACK, TB_GREEN);
-    tb_set_cell(x, 1, ' ', TB_BLACK, TB_GREEN);
+    tb_set_cell(x, height - 1, ' ', TB_BLACK, TB_GREEN);
   }
-  tb_set_cell(7, 1, 'A', TB_BLACK, TB_GREEN);
-  tb_set_cell(16, 1, 'B', TB_BLACK, TB_GREEN);
-  tb_set_cell(25, 1, 'C', TB_BLACK, TB_GREEN);
-  tb_set_cell(34, 1, 'D', TB_BLACK, TB_GREEN);
-  for (int y = 2; y < height; ++y)
+  tb_set_cell(7, 0, 'A', TB_BLACK, TB_GREEN);
+  tb_set_cell(16, 0, 'B', TB_BLACK, TB_GREEN);
+  tb_set_cell(25, 0, 'C', TB_BLACK, TB_GREEN);
+  tb_set_cell(34, 0, 'D', TB_BLACK, TB_GREEN);
+  for (int y = 0; y < height - 3; ++y)
   {
-    tb_printf(0, y, TB_BLACK, TB_GREEN, "% 3d", y - 1);
+    tb_printf(0, y + 1, TB_BLACK, TB_GREEN, "% 3d", y + 1);
   }
 }
 
@@ -71,20 +73,21 @@ render_status(const struct sheet& sheet)
 {
   using peelo::unicode::encoding::utf8::encode;
 
+  const auto height = tb_height();
   const auto key = get_cell_name(sheet.cursor_x, sheet.cursor_y);
 
-  if (current_mode == mode::insert)
+  if (current_mode == mode::insert || current_mode == mode::command)
   {
     tb_printf(
       0,
-      0,
+      height - 1,
       TB_BLACK,
       TB_GREEN,
       "%s %s",
       key,
       encode(input_buffer).c_str()
     );
-    tb_set_cursor(input_cursor + std::strlen(key) + 1, 0);
+    tb_set_cursor(input_cursor + std::strlen(key) + 1, height - 1);
   } else {
     const auto cell = sheet.grid.find(key);
 
@@ -92,17 +95,18 @@ render_status(const struct sheet& sheet)
     {
       tb_printf(
         0,
-        0,
+        height - 1,
         TB_BLACK,
         TB_GREEN,
-        "%s %s",
+        "%s (L) %s",
         key,
         encode(cell->second->get_source()).c_str()
       );
     } else {
-      tb_printf(0, 0, TB_BLACK, TB_GREEN, "%s", key);
+      tb_printf(0, height - 1, TB_BLACK, TB_GREEN, "%s", key);
     }
   }
+  tb_printf(0, height - 2, TB_DEFAULT, TB_DEFAULT, encode(message).c_str());
 }
 
 static void
@@ -125,7 +129,7 @@ render_cell(
     result = value.as_string();
     if (result.length() > CELL_WIDTH)
     {
-      result = result.substr(0, CELL_WIDTH);
+      result = result.substr(0, CELL_WIDTH - 1);
     }
     else if (result.length() < CELL_WIDTH)
     {
@@ -133,7 +137,11 @@ render_cell(
     }
   } else {
     result = value.to_string();
-    if (result.length() < CELL_WIDTH)
+    if (result.length() > CELL_WIDTH)
+    {
+      result = result.substr(0, CELL_WIDTH - 1);
+    }
+    else if (result.length() < CELL_WIDTH)
     {
       result.insert(0, CELL_WIDTH - result.length(), ' ');
     }
