@@ -158,30 +158,27 @@ render_status(struct sheet& sheet)
       encode(input_buffer).c_str()
     );
     tb_set_cursor(input_cursor + std::strlen(key) + 1, height - 1);
+  }
+  else if (const auto cell = sheet.get(key))
+  {
+    tb_printf(
+      0,
+      height - 1,
+      TB_BLACK,
+      TB_GREEN,
+      "%s %s",
+      key,
+      encode(cell->get_source()).c_str()
+    );
   } else {
-    const auto cell = sheet.grid.find(key);
-
-    if (cell != std::end(sheet.grid) && cell->second)
-    {
-      tb_printf(
-        0,
-        height - 1,
-        TB_BLACK,
-        TB_GREEN,
-        "%s %s",
-        key,
-        encode(cell->second->get_source()).c_str()
-      );
-    } else {
-      tb_printf(0, height - 1, TB_BLACK, TB_GREEN, "%s", key);
-    }
+    tb_printf(0, height - 1, TB_BLACK, TB_GREEN, "%s", key);
   }
   tb_printf(0, height - 2, TB_DEFAULT, TB_DEFAULT, encode(message).c_str());
 }
 
 static void
 render_cell(
-  struct cell& cell,
+  const struct cell& cell,
   laskin::context& context,
   bool& cursor_rendered
 )
@@ -239,12 +236,9 @@ render_sheet(struct sheet& sheet)
   {
     for (int x = 0; x < sheet::MAX_COLUMNS; ++x)
     {
-      const auto key = get_cell_name(x, y + xtop);
-      const auto cell = sheet.grid.find(key);
-
-      if (cell != std::end(sheet.grid) && cell->second)
+      if (const auto cell = sheet.get(get_cell_name(x, y + xtop)))
       {
-        render_cell(*cell->second, sheet.context, cursor_rendered);
+        render_cell(*cell, sheet.context, cursor_rendered);
       }
     }
   }

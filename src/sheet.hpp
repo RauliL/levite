@@ -37,7 +37,8 @@ struct cell
   int y;
   laskin::value value;
 
-  inline bool is_formula() const
+  inline bool
+  is_formula() const
   {
     if (value.is(laskin::value::type::string))
     {
@@ -49,18 +50,21 @@ struct cell
     return false;
   }
 
-  inline std::u32string get_source() const
+  inline std::u32string
+  get_source() const
   {
     return value.to_string();
   }
 
-  laskin::value evaluate(laskin::context& context) const;
+  laskin::value
+  evaluate(laskin::context& context) const;
 };
 
 struct sheet
 {
   using container_type = std::unordered_map<std::string, std::optional<cell>>;
 
+  static constexpr char DEFAULT_SEPARATOR = ',';
   static constexpr int MAX_COLUMNS = 4;
   static constexpr int MAX_ROWS = 999;
 
@@ -72,26 +76,41 @@ struct sheet
 
   explicit sheet();
 
-  inline std::optional<cell> get(int x, int y) const
+  inline std::optional<cell>
+  get(int x, int y) const
   {
     const auto it = grid.find(get_cell_name(x, y));
 
     return it != std::end(grid) && it->second ? it->second : std::nullopt;
   }
 
-  inline void set(int x, int y, const laskin::value& value)
+  inline std::optional<cell>
+  get(const std::string& name) const
+  {
+    const auto it = grid.find(name);
+
+    return it != std::end(grid) && it->second ? it->second : std::nullopt;
+  }
+
+  inline void
+  set(int x, int y, const laskin::value& value)
   {
     grid[get_cell_name(x, y)] = { x, y, value };
     modified = true;
   }
 
-  void set(int x, int y, const std::u32string& input);
+  void
+  set(int x, int y, const std::u32string& input);
 
-  void erase(int x, int y);
+  void
+  erase(int x, int y);
 
-  bool join(int x1, int y1, int x2, int y2);
+  bool
+  join(int x1, int y1, int x2, int y2);
 
-  bool load(const std::filesystem::path& path, char separator = ',');
+  bool
+  load(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
 
-  bool save(const std::filesystem::path& path, char separator = ',');
+  bool
+  save(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
 };
