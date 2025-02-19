@@ -52,9 +52,27 @@ cmd_quit(sheet&, const std::u32string&, const std::optional<std::u32string>&)
 }
 
 static void
-cmd_write(sheet&, const std::u32string&, const std::optional<std::u32string>&)
+cmd_write(
+  sheet& sheet,
+  const std::u32string& command,
+  const std::optional<std::u32string>& arg
+)
 {
-  message = U"File saving not yet implemented";
+  if (arg)
+  {
+    sheet.filename = *arg;
+  }
+  else if (!sheet.filename)
+  {
+    message = U"No filename.";
+    return;
+  }
+  if (sheet.save(*sheet.filename, sheet.separator))
+  {
+    message = U"File saved.";
+  } else {
+    message = U"Error saving file.";
+  }
 }
 
 static const std::unordered_map<std::u32string, command_callback> commands =

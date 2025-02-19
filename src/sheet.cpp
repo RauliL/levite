@@ -176,3 +176,85 @@ sheet::load(const std::filesystem::path& path, char separator)
   }
   modified = false;
 }
+
+static std::string
+escape(const std::string& input)
+{
+  const auto length = input.length();
+  std::string result(1, '"');
+
+  result.reserve(length + 2);
+  for (std::size_t i = 0; i < length; ++i)
+  {
+    const auto c = input[i];
+
+    if (c == '"')
+    {
+      result.append(2, '"');
+    } else {
+      result.append(1, c);
+    }
+  }
+
+  return result.append(1, '"');
+}
+
+bool
+sheet::save(const std::filesystem::path& path, char separator)
+{
+  using peelo::unicode::encoding::utf8::encode;
+
+  std::ofstream out(path);
+  int max_row = 0;
+  int max_col = 0;
+
+  if (!out.is_open())
+  {
+    return false;
+  }
+
+  // Find dimensions of used grid.
+  for (const auto& pair : grid)
+  {
+    if (pair.second)
+    {
+      const auto& cell = *pair.second;
+
+      max_col = std::max(max_col, cell.x + 1);
+      max_row = std::max(max_row, cell.y + 1);
+    }
+  }
+
+  // Write CSV data.
+  for (int y = 0; y < max_row; ++y)
+  {
+    for (int x = 0; x < max_col; ++x)
+    {
+      if (x > 0)
+      {
+        out << separator;
+      }
+      if (const auto cell = get(x, y))
+      {
+        const auto source = encode(cell->get_source());
+
+        if (
+          source.find(separator) != std::string::npos ||
+          source.find('"') != std::string::npos ||
+          source.find('\n') != std::string::npos ||
+          source.find('\r') != std::string::npos
+        )
+        {
+          out << escape(source);
+        } else {
+          out << source;
+        }
+      }
+    }
+    out << '\n';
+  }
+
+  modified = false;
+
+  return true;
+}

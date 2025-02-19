@@ -91,4 +91,6 @@ struct sheet
   void erase(int x, int y);
 
   void load(const std::filesystem::path& path, char separator = ',');
+
+  bool save(const std::filesystem::path& path, char separator = ',');
 };
