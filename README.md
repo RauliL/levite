@@ -30,3 +30,19 @@ user interface that [Vi] users should feel comfortable with.
 ## TODO
 
 - Support for more than 4 columns.
+
+## How to compile
+
+You need [CMake] and C++17 capable compiler to do this. Does not work on
+Windows yet, sorry.
+
+```bash
+$ git clone https://github.com/RauliL/levite.git
+$ cd levite
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+```
+
+[CMake]: https://www.cmake.org
