@@ -105,9 +105,7 @@ sheet::sheet()
 
       return std::nullopt;
     }
-  )
-  , cursor_x(0)
-  , cursor_y(0) {}
+  ) {}
 
 void
 sheet::set(int x, int y, const std::u32string& input)
@@ -182,51 +180,6 @@ sheet::join(int x1, int y1, int x2, int y2)
 
       return true;
     }
-  }
-
-  return false;
-}
-
-bool
-sheet::move_cursor(enum direction direction)
-{
-  switch (direction)
-  {
-    case direction::up:
-      if (cursor_y > 0)
-      {
-        --cursor_y;
-
-        return true;
-      }
-      break;
-
-    case direction::down:
-      if (cursor_y < MAX_ROWS - 1)
-      {
-        ++cursor_y;
-
-        return true;
-      }
-      break;
-
-    case direction::left:
-      if (cursor_x > 0)
-      {
-        --cursor_x;
-
-        return true;
-      }
-      break;
-
-    case direction::right:
-      if (cursor_x < MAX_COLUMNS - 1)
-      {
-        ++cursor_x;
-
-        return true;
-      }
-      break;
   }
 
   return false;

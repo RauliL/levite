@@ -30,4 +30,3 @@ user interface that [Vi] users should feel comfortable with.
 ## TODO
 
 - Support for more than 4 columns.
-- Scrolling.

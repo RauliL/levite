@@ -23,10 +23,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include "./screen.hpp"
 #include "./sheet.hpp"
 #include "./termbox2.h"
-
-extern std::u32string message;
 
 using command_callback = void(*)(
   sheet&,

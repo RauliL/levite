@@ -26,6 +26,7 @@
 #include <peelo/unicode/ctype/isspace.hpp>
 
 #include "./input.hpp"
+#include "./screen.hpp"
 #include "./sheet.hpp"
 #include "./termbox2.h"
 
@@ -62,9 +63,9 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       {
         if (is_blank())
         {
-          sheet.erase(sheet.cursor_x, sheet.cursor_y);
+          sheet.erase(cursor_x, cursor_y);
         } else {
-          sheet.set(sheet.cursor_x, sheet.cursor_y, input_buffer);
+          sheet.set(cursor_x, cursor_y, input_buffer);
         }
       }
       else if (!is_blank())
@@ -140,7 +141,7 @@ insert_mode(struct sheet& sheet, const tb_event& event)
 static void
 edit_current_cell(struct sheet& sheet, bool prepend = false)
 {
-  if (const auto cell = sheet.get(sheet.cursor_x, sheet.cursor_y))
+  if (const auto cell = sheet.get(cursor_x, cursor_y))
   {
     input_buffer = cell->get_source();
     input_cursor = prepend ? 0 : input_buffer.length();
@@ -164,28 +165,55 @@ normal_mode(struct sheet& sheet, const tb_event& event)
     case TB_KEY_BACKSPACE:
     case TB_KEY_BACKSPACE2:
     case TB_KEY_DELETE:
-      sheet.erase(sheet.cursor_x, sheet.cursor_y);
+      sheet.erase(cursor_x, cursor_y);
       return;
 
+    // Move one row downwards.
     case TB_KEY_ARROW_DOWN:
-      sheet.move_cursor(direction::down);
+      move_cursor(direction::down);
       return;
 
+    // Move one cell to the left.
     case TB_KEY_ARROW_LEFT:
-      sheet.move_cursor(direction::left);
+      move_cursor(direction::left);
       return;
 
+    // Move one cell to the right.
     case TB_KEY_ARROW_RIGHT:
-      sheet.move_cursor(direction::right);
+      move_cursor(direction::right);
       return;
 
+    // Move one row upwards.
     case TB_KEY_ARROW_UP:
-      sheet.move_cursor(direction::up);
+      move_cursor(direction::up);
       return;
+
+    // Move one screen towards end of the file.
+    case TB_KEY_CTRL_F:
+      scroll_down(tb_height() - 3);
+      break;
+
+    // Move one screen towards beginning of the file.
+    case TB_KEY_CTRL_B:
+      scroll_up(tb_height() - 3);
+      break;
+
+    // Move 1/2 screen towards end of the file.
+    case TB_KEY_CTRL_D:
+    case TB_KEY_PGDN:
+      scroll_down((tb_height() - 3) / 2);
+      break;
+
+    // Move 1/2 screen towards beginning of the file.
+    case TB_KEY_CTRL_U:
+    case TB_KEY_PGUP:
+      scroll_up((tb_height() - 3) / 2);
+      break;
   }
 
   switch (event.ch)
   {
+    // Enter into command mode.
     case ':':
       input_buffer.clear();
       input_buffer.append(1, U':');
@@ -202,45 +230,40 @@ normal_mode(struct sheet& sheet, const tb_event& event)
       edit_current_cell(sheet, true);
       break;
 
+    // Move one cell to the left.
     case 'h':
-      sheet.move_cursor(direction::left);
+      move_cursor(direction::left);
       break;
 
+    // Move one row downwards.
     case 'j':
-      sheet.move_cursor(direction::down);
+      move_cursor(direction::down);
       break;
 
+    // Move one row upwards.
     case 'k':
-      sheet.move_cursor(direction::up);
+      move_cursor(direction::up);
       break;
 
+    // Move one cell to the right.
     case 'l':
-      sheet.move_cursor(direction::right);
+      move_cursor(direction::right);
       break;
 
+    // Concatenate current cell with the one above it.
     case 'J':
-      if (sheet.join(
-        sheet.cursor_x,
-        sheet.cursor_y - 1,
-        sheet.cursor_x,
-        sheet.cursor_y
-      ))
+      if (sheet.join(cursor_x, cursor_y - 1, cursor_x, cursor_y))
       {
-        sheet.move_cursor(direction::up);
+        move_cursor(direction::up);
       }
       break;
 
+    // Edit cell above current one.
     case 'O':
-      if (sheet.move_cursor(direction::up))
+      if (move_cursor(direction::up))
       {
         edit_current_cell(sheet);
       }
-      break;
-
-
-    case 'q':
-      tb_shutdown();
-      std::exit(EXIT_SUCCESS);
       break;
   }
 }

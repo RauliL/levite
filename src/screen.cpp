@@ -28,23 +28,93 @@
 #include <peelo/unicode/encoding/utf8.hpp>
 
 #include "./input.hpp"
+#include "./screen.hpp"
 #include "./sheet.hpp"
 #include "./termbox2.h"
 
 static constexpr int CELL_WIDTH = 10;
 
 std::u32string message;
+int cursor_x;
+int cursor_y;
 
-inline int
-cell_x_to_screen_x(int x)
+static int xtop;
+
+bool
+scroll_up(int count)
 {
-  return (CELL_WIDTH * x) + 3;
+  const auto height = tb_height() - 3;
+
+  if (xtop == 0)
+  {
+    return false;
+  }
+  xtop = std::max(0, xtop - count);
+  cursor_y = std::min(cursor_y, xtop + height - 1);
+
+  return true;
 }
 
-inline int
-cell_y_to_screen_y(int y)
+bool
+scroll_down(int count)
 {
-  return y + 1;
+  if (xtop >= sheet::MAX_ROWS)
+  {
+    return false;
+  }
+  xtop = std::min(sheet::MAX_ROWS, xtop + count);
+  cursor_y = std::max(cursor_y, xtop);
+
+  return true;
+}
+
+bool
+move_cursor(enum direction direction)
+{
+  const auto height = tb_height() - 3;
+
+  switch (direction)
+  {
+    case direction::up:
+      if (cursor_y > xtop)
+      {
+        --cursor_y;
+
+        return true;
+      }
+
+      return scroll_up(1);
+
+    case direction::down:
+      if (cursor_y < xtop + height - 1)
+      {
+        ++cursor_y;
+
+        return true;
+      }
+
+      return scroll_down(1);
+
+    case direction::left:
+      if (cursor_x > 0)
+      {
+        --cursor_x;
+
+        return true;
+      }
+      break;
+
+    case direction::right:
+      if (cursor_x < sheet::MAX_COLUMNS - 1)
+      {
+        ++cursor_x;
+
+        return true;
+      }
+      break;
+  }
+
+  return false;
 }
 
 static void
@@ -62,19 +132,19 @@ render_ui()
   tb_set_cell(17, 0, 'B', TB_BLACK, TB_GREEN);
   tb_set_cell(27, 0, 'C', TB_BLACK, TB_GREEN);
   tb_set_cell(37, 0, 'D', TB_BLACK, TB_GREEN);
-  for (int y = 0; y < height - 3; ++y)
+  for (int y = 0, row = xtop; y < height - 3; ++y, ++row)
   {
-    tb_printf(0, y + 1, TB_BLACK, TB_GREEN, "% 3d", y + 1);
+    tb_printf(0, y + 1, TB_BLACK, TB_GREEN, "%3d", row + 1);
   }
 }
 
 static void
-render_status(const struct sheet& sheet)
+render_status(struct sheet& sheet)
 {
   using peelo::unicode::encoding::utf8::encode;
 
   const auto height = tb_height();
-  const auto key = get_cell_name(sheet.cursor_x, sheet.cursor_y);
+  const auto key = get_cell_name(cursor_x, cursor_y);
 
   if (current_mode == mode::insert || current_mode == mode::command)
   {
@@ -98,7 +168,7 @@ render_status(const struct sheet& sheet)
         height - 1,
         TB_BLACK,
         TB_GREEN,
-        "%s (L) %s",
+        "%s %s",
         key,
         encode(cell->second->get_source()).c_str()
       );
@@ -111,17 +181,15 @@ render_status(const struct sheet& sheet)
 
 static void
 render_cell(
-  const struct cell& cell,
-  struct sheet& sheet,
+  struct cell& cell,
+  laskin::context& context,
   bool& cursor_rendered
 )
 {
   using peelo::unicode::encoding::utf8::encode;
 
-  const auto is_selected =
-    cell.x == sheet.cursor_x &&
-    cell.y == sheet.cursor_y;
-  const auto value = cell.evaluate(sheet.context);
+  const auto is_selected = cell.x == cursor_x && cell.y == cursor_y;
+  auto value = cell.evaluate(context);
   std::u32string result;
 
   if (value.is(laskin::value::type::string))
@@ -143,13 +211,13 @@ render_cell(
     }
     else if (result.length() < CELL_WIDTH)
     {
-      result.insert(0, CELL_WIDTH - result.length(), ' ');
+      result.insert(0, CELL_WIDTH - result.length(), U' ');
     }
   }
 
   tb_print(
-    cell_x_to_screen_x(cell.x),
-    cell_y_to_screen_y(cell.y),
+    (cell.x * CELL_WIDTH) + 3,
+    cell.y - xtop + 1,
     is_selected ? TB_BLACK : TB_GREEN,
     is_selected ? (TB_GREEN | TB_BRIGHT) : TB_DEFAULT,
     encode(result).c_str()
@@ -164,20 +232,28 @@ render_cell(
 static void
 render_sheet(struct sheet& sheet)
 {
+  const auto height = tb_height() - 3;
   bool cursor_rendered = false;
 
-  for (const auto& cell : sheet.grid)
+  for (int y = 0; y < height; ++y)
   {
-    if (cell.second)
+    for (int x = 0; x < sheet::MAX_COLUMNS; ++x)
     {
-      render_cell(*cell.second, sheet, cursor_rendered);
+      const auto key = get_cell_name(x, y + xtop);
+      const auto cell = sheet.grid.find(key);
+
+      if (cell != std::end(sheet.grid) && cell->second)
+      {
+        render_cell(*cell->second, sheet.context, cursor_rendered);
+      }
     }
   }
+
   if (!cursor_rendered)
   {
     tb_print(
-      cell_x_to_screen_x(sheet.cursor_x),
-      cell_y_to_screen_y(sheet.cursor_y),
+      (CELL_WIDTH * cursor_x) + 3, // TODO: Fix this.
+      cursor_y - xtop + 1,
       TB_BLACK,
       TB_GREEN | TB_BRIGHT,
       std::string(CELL_WIDTH, ' ').c_str()

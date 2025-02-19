@@ -31,14 +31,6 @@
 
 const char* get_cell_name(int x, int y);
 
-enum class direction
-{
-  left,
-  right,
-  up,
-  down,
-};
-
 struct cell
 {
   int x;
@@ -77,8 +69,6 @@ struct sheet
   char separator;
   container_type grid;
   laskin::context context;
-  int cursor_x;
-  int cursor_y;
 
   explicit sheet();
 
@@ -100,8 +90,6 @@ struct sheet
   void erase(int x, int y);
 
   bool join(int x1, int y1, int x2, int y2);
-
-  bool move_cursor(enum direction direction);
 
   bool load(const std::filesystem::path& path, char separator = ',');
 
