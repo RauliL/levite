@@ -31,6 +31,14 @@
 
 const char* get_cell_name(int x, int y);
 
+enum class direction
+{
+  left,
+  right,
+  up,
+  down,
+};
+
 struct cell
 {
   int x;
@@ -89,6 +97,10 @@ struct sheet
   void set(int x, int y, const std::u32string& input);
 
   void erase(int x, int y);
+
+  bool join(int x1, int y1, int x2, int y2);
+
+  bool move_cursor(enum direction direction);
 
   void load(const std::filesystem::path& path, char separator = ',');
 

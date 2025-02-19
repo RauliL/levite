@@ -35,6 +35,12 @@
 
 static const std::regex CELL_PATTERN("^([A-Z])([0-9]+)$");
 
+static inline bool
+is_valid(int x, int y)
+{
+  return x >= 0 && x < sheet::MAX_COLUMNS && y >= 0;
+}
+
 const char*
 get_cell_name(int x, int y)
 {
@@ -147,6 +153,78 @@ sheet::erase(int x, int y)
   {
     grid.erase(it);
   }
+}
+
+bool
+sheet::join(int x1, int y1, int x2, int y2)
+{
+  if (is_valid(x1, y1) && is_valid(x2, y2))
+  {
+    const auto cell1 = get(x1, x2);
+    const auto cell2 = get(x2, y2);
+
+    if (cell1 && cell2)
+    {
+      const auto value1 = cell1->evaluate(context);
+      const auto value2 = cell2->evaluate(context);
+      laskin::value result;
+
+      try
+      {
+        result = value1 + value2;
+      }
+      catch (const laskin::error& e)
+      {
+        return false;
+      }
+      set(x1, y1, result);
+      erase(x2, y2);
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool
+sheet::move_cursor(enum direction direction)
+{
+  switch (direction)
+  {
+    case direction::up:
+      if (cursor_y > 0)
+      {
+        --cursor_y;
+
+        return true;
+      }
+      break;
+
+    case direction::down:
+      ++cursor_y;
+      return true;
+
+    case direction::left:
+      if (cursor_x > 0)
+      {
+        --cursor_x;
+
+        return true;
+      }
+      break;
+
+    case direction::right:
+      if (cursor_x < MAX_COLUMNS - 1)
+      {
+        ++cursor_x;
+
+        return true;
+      }
+      break;
+  }
+
+  return false;
 }
 
 void

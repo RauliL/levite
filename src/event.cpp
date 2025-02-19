@@ -29,14 +29,6 @@
 #include "./sheet.hpp"
 #include "./termbox2.h"
 
-enum class direction
-{
-  up,
-  down,
-  left,
-  right,
-};
-
 mode current_mode = mode::normal;
 std::u32string input_buffer;
 std::u32string::size_type input_cursor;
@@ -160,38 +152,6 @@ edit_current_cell(struct sheet& sheet, bool prepend = false)
 }
 
 static void
-move(struct sheet& sheet, direction dir)
-{
-  switch (dir)
-  {
-    case direction::up:
-      if (sheet.cursor_y > 0)
-      {
-        --sheet.cursor_y;
-      }
-      break;
-
-    case direction::down:
-      ++sheet.cursor_y;
-      break;
-
-    case direction::left:
-      if (sheet.cursor_x > 0)
-      {
-        --sheet.cursor_x;
-      }
-      break;
-
-    case direction::right:
-      if (sheet.cursor_x < sheet.MAX_COLUMNS - 1)
-      {
-        ++sheet.cursor_x;
-      }
-      break;
-  }
-}
-
-static void
 normal_mode(struct sheet& sheet, const tb_event& event)
 {
   switch (event.key)
@@ -208,19 +168,19 @@ normal_mode(struct sheet& sheet, const tb_event& event)
       return;
 
     case TB_KEY_ARROW_DOWN:
-      move(sheet, direction::down);
+      sheet.move_cursor(direction::down);
       return;
 
     case TB_KEY_ARROW_LEFT:
-      move(sheet, direction::left);
+      sheet.move_cursor(direction::left);
       return;
 
     case TB_KEY_ARROW_RIGHT:
-      move(sheet, direction::right);
+      sheet.move_cursor(direction::right);
       return;
 
     case TB_KEY_ARROW_UP:
-      move(sheet, direction::up);
+      sheet.move_cursor(direction::up);
       return;
   }
 
@@ -243,26 +203,38 @@ normal_mode(struct sheet& sheet, const tb_event& event)
       break;
 
     case 'h':
-      move(sheet, direction::left);
+      sheet.move_cursor(direction::left);
       break;
 
     case 'j':
-      move(sheet, direction::down);
+      sheet.move_cursor(direction::down);
       break;
 
     case 'k':
-      move(sheet, direction::up);
+      sheet.move_cursor(direction::up);
       break;
 
     case 'l':
-      move(sheet, direction::right);
+      sheet.move_cursor(direction::right);
       break;
 
-    // TODO: 'J' - Join two lines.
+    case 'J':
+      if (sheet.join(
+        sheet.cursor_x,
+        sheet.cursor_y - 1,
+        sheet.cursor_x,
+        sheet.cursor_y
+      ))
+      {
+        sheet.move_cursor(direction::up);
+      }
+      break;
 
     case 'O':
-      move(sheet, direction::up);
-      edit_current_cell(sheet);
+      if (sheet.move_cursor(direction::up))
+      {
+        edit_current_cell(sheet);
+      }
       break;
 
 
