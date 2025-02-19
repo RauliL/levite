@@ -60,7 +60,7 @@ render_ui()
   tb_set_cell(16, 1, 'B', TB_BLACK, TB_GREEN);
   tb_set_cell(25, 1, 'C', TB_BLACK, TB_GREEN);
   tb_set_cell(34, 1, 'D', TB_BLACK, TB_GREEN);
-  for (int y = 2; y < height - 1; ++y)
+  for (int y = 2; y < height; ++y)
   {
     tb_printf(0, y, TB_BLACK, TB_GREEN, "% 3d", y - 1);
   }
