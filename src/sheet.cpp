@@ -23,7 +23,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <regex>
 #include <sstream>
 
 #include <laskin/chrono.hpp>
@@ -33,22 +32,55 @@
 
 #include "./sheet.hpp"
 
-static const std::regex CELL_PATTERN("^([A-Z])([0-9]+)$");
-
-static inline bool
-is_valid(int x, int y)
+bool
+coordinates::is_valid_name(const std::u32string& input)
 {
-  return x >= 0 && x < sheet::MAX_COLUMNS && y >= 0 && y < sheet::MAX_ROWS;
+  return (
+    input.length() > 1 &&
+    (
+      (input[0] >= U'a' && input[0] <= U'z') ||
+      (input[0] >= U'A' && input[0] <= U'Z')
+    ) &&
+    std::all_of(
+      std::begin(input) + 1,
+      std::end(input),
+      [](const char32_t c)
+      {
+        return c >= U'0' && c <= U'9';
+      }
+    )
+  );
 }
 
-const char*
-get_cell_name(int x, int y)
+std::optional<coordinates>
+coordinates::parse(const std::u32string& input)
 {
+  using peelo::unicode::encoding::utf8::encode;
+
+  if (is_valid_name(input))
+  {
+    const auto x = std::toupper(input[0]) - 'A';
+    const auto y = std::stoi(encode(input.substr(1))) - 1;
+
+    if (is_valid(x, y))
+    {
+      return coordinates{ x, y };
+    }
+  }
+
+  return std::nullopt;
+}
+
+std::u32string
+coordinates::get_name() const
+{
+  using peelo::unicode::encoding::utf8::decode;
+
   static char buffer[BUFSIZ];
 
   std::snprintf(buffer, BUFSIZ, "%c%d", 'A' + x, y + 1);
 
-  return buffer;
+  return decode(buffer);
 }
 
 laskin::value
@@ -78,28 +110,17 @@ sheet::sheet()
   : modified(false)
   , separator(',')
   , context(
-    [this](const std::u32string& unencoded_name) -> std::optional<laskin::value>
+    [this](const std::u32string& name) -> std::optional<laskin::value>
     {
       using peelo::unicode::encoding::utf8::encode;
 
-      const auto name = encode(unencoded_name);
-      std::smatch match;
-
-      if (std::regex_search(
-        std::begin(name),
-        std::end(name),
-        match,
-        CELL_PATTERN)
-      )
+      if (const auto coords = coordinates::parse(name))
       {
-        const int x = match[1].str()[0] - 'A';
-        const int y = std::stoi(match[2].str()) - 1;
-        const auto name = get_cell_name(x, y);
-        const auto cell = this->grid.find(name);
+        const auto cell = this->grid.find(*coords);
 
         if (cell != std::end(this->grid) && cell->second)
         {
-          return cell->second->evaluate(this->context);
+          return cell->second->evaluate(this->context);;
         }
       }
 
@@ -108,44 +129,44 @@ sheet::sheet()
   ) {}
 
 void
-sheet::set(int x, int y, const std::u32string& input)
+sheet::set(const coordinates& coords, const std::u32string& input)
 {
   if (laskin::number::is_valid(input))
   {
-    set(x, y, laskin::value::make_number(input));
+    set(coords, laskin::value::make_number(input));
   }
   else if (laskin::is_date(input))
   {
-    set(x, y, laskin::value::make_date(input));
+    set(coords, laskin::value::make_date(input));
   }
   else if (laskin::is_time(input))
   {
-    set(x, y, laskin::value::make_time(input));
+    set(coords, laskin::value::make_time(input));
   }
   else if (laskin::is_month(input))
   {
-    set(x, y, laskin::value::make_month(input));
+    set(coords, laskin::value::make_month(input));
   }
   else if (laskin::is_weekday(input))
   {
-    set(x, y, laskin::value::make_weekday(input));
+    set(coords, laskin::value::make_weekday(input));
   }
   else if (!input.compare(U"true"))
   {
-    set(x, y, laskin::value::make_boolean(true));
+    set(coords, laskin::value::make_boolean(true));
   }
   else if (!input.compare(U"false"))
   {
-    set(x, y, laskin::value::make_boolean(false));
+    set(coords, laskin::value::make_boolean(false));
   } else {
-    set(x, y, laskin::value::make_string(input));
+    set(coords, laskin::value::make_string(input));
   }
 }
 
 void
-sheet::erase(int x, int y)
+sheet::erase(const coordinates& coords)
 {
-  const auto it = grid.find(get_cell_name(x, y));
+  const auto it = grid.find(coords);
 
   if (it != std::end(grid))
   {
@@ -154,12 +175,12 @@ sheet::erase(int x, int y)
 }
 
 bool
-sheet::join(int x1, int y1, int x2, int y2)
+sheet::join(const coordinates& c1, const coordinates& c2)
 {
-  if (is_valid(x1, y1) && is_valid(x2, y2))
+  if (c1.is_valid() && c2.is_valid())
   {
-    const auto cell1 = get(x1, x2);
-    const auto cell2 = get(x2, y2);
+    const auto cell1 = get(c1);
+    const auto cell2 = get(c2);
 
     if (cell1 && cell2)
     {
@@ -175,8 +196,8 @@ sheet::join(int x1, int y1, int x2, int y2)
       {
         return false;
       }
-      set(x1, y1, result);
-      erase(x2, y2);
+      set(c1, result);
+      erase(c2);
 
       return true;
     }
@@ -197,7 +218,7 @@ sheet::load(const std::filesystem::path& path, char separator)
   );
   const auto size = doc.GetRowCount();
 
-  if (size > MAX_ROWS)
+  if (size > coordinates::MAX_Y)
   {
     return false;
   }
@@ -206,13 +227,16 @@ sheet::load(const std::filesystem::path& path, char separator)
   {
     const auto row = doc.GetRow<std::string>(i);
 
-    if (row.size() > MAX_COLUMNS)
+    if (row.size() > coordinates::MAX_X)
     {
       return false;
     }
     for (std::size_t j = 0; j < row.size(); ++j)
     {
-      set(j, i, decode(row[j]));
+      set(
+        coordinates{ static_cast<int>(j), static_cast<int>(i) },
+        decode(row[j])
+      );
     }
   }
   modified = false;
@@ -263,8 +287,8 @@ sheet::save(const std::filesystem::path& path, char separator)
     {
       const auto& cell = *pair.second;
 
-      max_col = std::max(max_col, cell.x + 1);
-      max_row = std::max(max_row, cell.y + 1);
+      max_col = std::max(max_col, cell.coordinates.x + 1);
+      max_row = std::max(max_row, cell.coordinates.y + 1);
     }
   }
 
@@ -277,7 +301,7 @@ sheet::save(const std::filesystem::path& path, char separator)
       {
         out << separator;
       }
-      if (const auto cell = get(x, y))
+      if (const auto cell = get({ x, y }))
       {
         const auto source = encode(cell->get_source());
 

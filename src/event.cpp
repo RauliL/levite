@@ -27,7 +27,6 @@
 
 #include "./input.hpp"
 #include "./screen.hpp"
-#include "./sheet.hpp"
 #include "./termbox2.h"
 
 mode current_mode = mode::normal;
@@ -63,9 +62,9 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       {
         if (is_blank())
         {
-          sheet.erase(cursor_x, cursor_y);
+          sheet.erase(cursor);
         } else {
-          sheet.set(cursor_x, cursor_y, input_buffer);
+          sheet.set(cursor, input_buffer);
         }
       }
       else if (!is_blank())
@@ -141,7 +140,7 @@ insert_mode(struct sheet& sheet, const tb_event& event)
 static void
 edit_current_cell(struct sheet& sheet, bool prepend = false)
 {
-  if (const auto cell = sheet.get(cursor_x, cursor_y))
+  if (const auto cell = sheet.get(cursor))
   {
     input_buffer = cell->get_source();
     input_cursor = prepend ? 0 : input_buffer.length();
@@ -165,7 +164,7 @@ normal_mode(struct sheet& sheet, const tb_event& event)
     case TB_KEY_BACKSPACE:
     case TB_KEY_BACKSPACE2:
     case TB_KEY_DELETE:
-      sheet.erase(cursor_x, cursor_y);
+      sheet.erase(cursor);
       return;
 
     // Move one row downwards.
@@ -252,7 +251,7 @@ normal_mode(struct sheet& sheet, const tb_event& event)
 
     // Concatenate current cell with the one above it.
     case 'J':
-      if (sheet.join(cursor_x, cursor_y - 1, cursor_x, cursor_y))
+      if (sheet.join({ cursor.x, cursor.y - 1 }, cursor))
       {
         move_cursor(direction::up);
       }

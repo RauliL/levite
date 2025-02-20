@@ -29,12 +29,71 @@
 
 #include "laskin/context.hpp"
 
-const char* get_cell_name(int x, int y);
+struct coordinates
+{
+  static constexpr int MAX_X = 'Z' - '@';
+  static constexpr int MAX_Y = 999;
+
+  int x;
+  int y;
+
+  static inline bool
+  is_valid(int x, int y)
+  {
+    return x >= 0 && x < MAX_X && y >= 0 && y < MAX_Y;
+  }
+
+  inline bool
+  is_valid() const
+  {
+    return is_valid(x, y);
+  }
+
+  static bool
+  is_valid_name(const std::u32string& input);
+
+  static std::optional<coordinates>
+  parse(const std::u32string& input);
+
+  std::u32string
+  get_name() const;
+
+  inline bool
+  operator==(const coordinates& that) const
+  {
+    return x == that.x && y == that.y;
+  }
+
+  inline bool
+  operator!=(const coordinates& that) const
+  {
+    return x != that.x || y != that.y;
+  }
+};
+
+template<>
+struct std::equal_to<coordinates>
+{
+  bool
+  operator()(const coordinates& lhs, const coordinates& rhs) const
+  {
+    return lhs.x == rhs.x && lhs.y == rhs.y;
+  }
+};
+
+template<>
+struct std::hash<coordinates>
+{
+  std::size_t
+  operator()(const coordinates& c) const
+  {
+    return hash<int>()(c.x) ^ hash<int>()(c.y);
+  }
+};
 
 struct cell
 {
-  int x;
-  int y;
+  struct coordinates coordinates;
   laskin::value value;
 
   inline bool
@@ -62,11 +121,9 @@ struct cell
 
 struct sheet
 {
-  using container_type = std::unordered_map<std::string, std::optional<cell>>;
+  using container_type = std::unordered_map<coordinates, std::optional<cell>>;
 
   static constexpr char DEFAULT_SEPARATOR = ',';
-  static constexpr int MAX_COLUMNS = 'Z' - '@';
-  static constexpr int MAX_ROWS = 999;
 
   std::optional<std::filesystem::path> filename;
   bool modified;
@@ -77,36 +134,28 @@ struct sheet
   explicit sheet();
 
   inline std::optional<cell>
-  get(int x, int y) const
+  get(const coordinates& coords) const
   {
-    const auto it = grid.find(get_cell_name(x, y));
-
-    return it != std::end(grid) && it->second ? it->second : std::nullopt;
-  }
-
-  inline std::optional<cell>
-  get(const std::string& name) const
-  {
-    const auto it = grid.find(name);
+    const auto it = grid.find(coords);
 
     return it != std::end(grid) && it->second ? it->second : std::nullopt;
   }
 
   inline void
-  set(int x, int y, const laskin::value& value)
+  set(const coordinates& coords, const laskin::value& value)
   {
-    grid[get_cell_name(x, y)] = { x, y, value };
+    grid[coords] = { coords, value };
     modified = true;
   }
 
   void
-  set(int x, int y, const std::u32string& input);
+  set(const coordinates& coords, const std::u32string& input);
 
   void
-  erase(int x, int y);
+  erase(const coordinates& coords);
 
   bool
-  join(int x1, int y1, int x2, int y2);
+  join(const coordinates& c1, const coordinates& c2);
 
   bool
   load(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);

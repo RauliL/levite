@@ -23,6 +23,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <peelo/unicode/encoding/utf8.hpp>
+
 #include "./screen.hpp"
 #include "./sheet.hpp"
 #include "./termbox2.h"
@@ -124,6 +126,8 @@ static const std::unordered_map<std::u32string, command_callback> commands =
 void
 run_command(struct sheet& sheet, const std::u32string& input)
 {
+  using peelo::unicode::encoding::utf8::encode;
+
   if (input.empty() || input[0] != ':')
   {
     return;
@@ -144,6 +148,12 @@ run_command(struct sheet& sheet, const std::u32string& input)
   if (function != std::end(commands))
   {
     function->second(sheet, command, arg);
+    return;
+  }
+
+  if (const auto coords = coordinates::parse(command))
+  {
+    move_to(*coords);
     return;
   }
 

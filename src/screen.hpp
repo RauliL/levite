@@ -25,11 +25,10 @@
  */
 #pragma once
 
-#include <string>
+#include "./sheet.hpp"
 
 extern std::u32string message;
-extern int cursor_x;
-extern int cursor_y;
+extern coordinates cursor;
 
 enum class direction
 {
@@ -39,6 +38,7 @@ enum class direction
   right,
 };
 
+bool move_to(const coordinates& coords);
 bool scroll_up(int count);
 bool scroll_down(int count);
 bool move_cursor(enum direction direction);
