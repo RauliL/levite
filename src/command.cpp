@@ -68,8 +68,17 @@ cmd_edit(
 }
 
 static void
-cmd_quit(sheet&, const std::u32string&, const std::optional<std::u32string>&)
+cmd_quit(
+  struct sheet& sheet,
+  const std::u32string& command,
+  const std::optional<std::u32string>&
+)
 {
+  if (sheet.modified && command.back() != '!')
+  {
+    message = U"File modified.";
+    return;
+  }
   tb_shutdown();
   std::exit(EXIT_SUCCESS);
 }
