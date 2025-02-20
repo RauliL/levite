@@ -33,6 +33,14 @@
 #include "./termbox2.h"
 
 static constexpr int CELL_WIDTH = 10;
+static constexpr int UI_FOREGROUND = TB_BLACK;
+static constexpr int UI_BACKGROUND = TB_GREEN;
+static constexpr int CELL_FOREGROUND = TB_GREEN;
+static constexpr int CELL_BACKGROUND = TB_DEFAULT;
+static constexpr int STATUS_FOREGROUND = TB_DEFAULT;
+static constexpr int STATUS_BACKGROUND = TB_DEFAULT;
+static constexpr int CURSOR_FOREGROUND = TB_BLACK;
+static constexpr int CURSOR_BACKGROUND = TB_GREEN | TB_BRIGHT;
 
 std::u32string message;
 int cursor_x;
@@ -125,16 +133,16 @@ render_ui()
 
   for (int x = 0; x < width; ++x)
   {
-    tb_set_cell(x, 0, ' ', TB_BLACK, TB_GREEN);
-    tb_set_cell(x, height - 1, ' ', TB_BLACK, TB_GREEN);
+    tb_set_cell(x, 0, ' ', UI_FOREGROUND, UI_BACKGROUND);
+    tb_set_cell(x, height - 1, ' ', UI_FOREGROUND, UI_BACKGROUND);
   }
-  tb_set_cell(7, 0, 'A', TB_BLACK, TB_GREEN);
-  tb_set_cell(17, 0, 'B', TB_BLACK, TB_GREEN);
-  tb_set_cell(27, 0, 'C', TB_BLACK, TB_GREEN);
-  tb_set_cell(37, 0, 'D', TB_BLACK, TB_GREEN);
+  tb_set_cell(7, 0, 'A', UI_FOREGROUND, UI_BACKGROUND);
+  tb_set_cell(17, 0, 'B', UI_FOREGROUND, UI_BACKGROUND);
+  tb_set_cell(27, 0, 'C', UI_FOREGROUND, UI_BACKGROUND);
+  tb_set_cell(37, 0, 'D', UI_FOREGROUND, UI_BACKGROUND);
   for (int y = 0, row = xtop; y < height - 3; ++y, ++row)
   {
-    tb_printf(0, y + 1, TB_BLACK, TB_GREEN, "%3d", row + 1);
+    tb_printf(0, y + 1, UI_FOREGROUND, UI_BACKGROUND, "%3d", row + 1);
   }
 }
 
@@ -151,8 +159,8 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      TB_BLACK,
-      TB_GREEN,
+      CURSOR_FOREGROUND,
+      CURSOR_BACKGROUND,
       "%s %s",
       key,
       encode(input_buffer).c_str()
@@ -164,16 +172,22 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      TB_BLACK,
-      TB_GREEN,
+      UI_FOREGROUND,
+      UI_BACKGROUND,
       "%s %s",
       key,
       encode(cell->get_source()).c_str()
     );
   } else {
-    tb_printf(0, height - 1, TB_BLACK, TB_GREEN, "%s", key);
+    tb_printf(0, height - 1, UI_FOREGROUND, UI_BACKGROUND, "%s", key);
   }
-  tb_printf(0, height - 2, TB_DEFAULT, TB_DEFAULT, encode(message).c_str());
+  tb_printf(
+    0,
+    height - 2,
+    STATUS_FOREGROUND,
+    STATUS_BACKGROUND,
+    encode(message).c_str()
+  );
 }
 
 static void
@@ -215,8 +229,8 @@ render_cell(
   tb_print(
     (cell.x * CELL_WIDTH) + 3,
     cell.y - xtop + 1,
-    is_selected ? TB_BLACK : TB_GREEN,
-    is_selected ? (TB_GREEN | TB_BRIGHT) : TB_DEFAULT,
+    is_selected ? CURSOR_FOREGROUND : CELL_FOREGROUND,
+    is_selected ? CURSOR_BACKGROUND : CELL_BACKGROUND,
     encode(result).c_str()
   );
 
@@ -248,8 +262,8 @@ render_sheet(struct sheet& sheet)
     tb_print(
       (CELL_WIDTH * cursor_x) + 3, // TODO: Fix this.
       cursor_y - xtop + 1,
-      TB_BLACK,
-      TB_GREEN | TB_BRIGHT,
+      CURSOR_FOREGROUND,
+      CURSOR_BACKGROUND,
       std::string(CELL_WIDTH, ' ').c_str()
     );
   }
