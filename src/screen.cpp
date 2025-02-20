@@ -130,16 +130,27 @@ render_ui()
 {
   const auto width = tb_width();
   const auto height = tb_height();
+  const auto display_columns = (width - 3) / CELL_WIDTH;
 
   for (int x = 0; x < width; ++x)
   {
     tb_set_cell(x, 0, ' ', UI_FOREGROUND, UI_BACKGROUND);
     tb_set_cell(x, height - 1, ' ', UI_FOREGROUND, UI_BACKGROUND);
   }
-  tb_set_cell(7, 0, 'A', UI_FOREGROUND, UI_BACKGROUND);
-  tb_set_cell(17, 0, 'B', UI_FOREGROUND, UI_BACKGROUND);
-  tb_set_cell(27, 0, 'C', UI_FOREGROUND, UI_BACKGROUND);
-  tb_set_cell(37, 0, 'D', UI_FOREGROUND, UI_BACKGROUND);
+  for (
+    int column = 0;
+    column < display_columns && column < sheet::MAX_COLUMNS;
+    ++column
+  )
+  {
+    tb_set_cell(
+      (column * CELL_WIDTH) + 3 + 4,
+      0,
+      'A' + column,
+      UI_FOREGROUND,
+      UI_BACKGROUND
+    );
+  }
   for (int y = 0, row = xtop; y < height - 3; ++y, ++row)
   {
     tb_printf(0, y + 1, UI_FOREGROUND, UI_BACKGROUND, "%3d", row + 1);
