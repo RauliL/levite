@@ -27,10 +27,6 @@ user interface that [Vi] users should feel comfortable with.
 [Vi]: https://en.wikipedia.org/wiki/Vi_(text_editor)
 [CSV]: https://en.wikipedia.org/wiki/Comma-separated_values
 
-## TODO
-
-- Support for more than 4 columns.
-
 ## How to compile
 
 You need [CMake] and C++17 capable compiler to do this. Does not work on
