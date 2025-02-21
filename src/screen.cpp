@@ -23,6 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <cmath>
 #include <cstring>
 
 #include <peelo/unicode/encoding/utf8.hpp>
@@ -32,6 +33,7 @@
 #include "./termbox2.h"
 
 static constexpr int CELL_WIDTH = 10;
+static const std::string EMPTY_CELL = std::string(CELL_WIDTH, ' ');
 static constexpr int UI_FOREGROUND = TB_BLACK;
 static constexpr int UI_BACKGROUND = TB_GREEN;
 static constexpr int CELL_FOREGROUND = TB_GREEN;
@@ -42,9 +44,22 @@ static constexpr int CURSOR_FOREGROUND = TB_BLACK;
 static constexpr int CURSOR_BACKGROUND = TB_GREEN | TB_BRIGHT;
 
 static int xtop;
+static int xleft;
 
 std::u32string message;
 coordinates cursor;
+
+static inline int
+get_page_width()
+{
+  return std::floor((static_cast<double>(tb_width() - 3)) / CELL_WIDTH);
+}
+
+static inline int
+get_page_height()
+{
+  return tb_height() - 3;
+}
 
 bool
 move_to(const coordinates& coords)
@@ -53,7 +68,8 @@ move_to(const coordinates& coords)
   {
     return false;
   }
-  xtop = std::max(0, coords.y - (tb_height() - 3) / 2);
+  xtop = std::max(0, coords.y - get_page_height() / 2);
+  xleft = std::max(0, coords.x - get_page_width() / 2);
   cursor = coords;
 
   return true;
@@ -62,7 +78,7 @@ move_to(const coordinates& coords)
 bool
 scroll_up(int count)
 {
-  const auto height = tb_height() - 3;
+  const auto height = get_page_height();
 
   if (xtop == 0)
   {
@@ -90,34 +106,41 @@ scroll_down(int count)
 bool
 move_cursor(enum direction direction)
 {
-  const auto height = tb_height() - 3;
+  const auto height = get_page_height();
 
   switch (direction)
   {
     case direction::up:
-      if (cursor.y > xtop)
+      if (cursor.y > 0)
       {
-        --cursor.y;
+        if (--cursor.y < xtop)
+        {
+          --xtop;
+        }
 
         return true;
       }
-
-      return scroll_up(1);
+      break;
 
     case direction::down:
-      if (cursor.y < xtop + height - 1)
+      if (cursor.y < coordinates::MAX_Y - 1)
       {
-        ++cursor.y;
+        if (++cursor.y >= xtop + height)
+        {
+          ++xtop;
+        }
 
         return true;
       }
-
-      return scroll_down(1);
+      break;
 
     case direction::left:
       if (cursor.x > 0)
       {
-        --cursor.x;
+        if (--cursor.x < xleft)
+        {
+          --xleft;
+        }
 
         return true;
       }
@@ -126,7 +149,10 @@ move_cursor(enum direction direction)
     case direction::right:
       if (cursor.x < coordinates::MAX_X - 1)
       {
-        ++cursor.x;
+        if (++cursor.x >= xleft + get_page_width())
+        {
+          ++xleft;
+        }
 
         return true;
       }
@@ -150,14 +176,14 @@ render_ui()
   }
   for (
     int column = 0;
-    column < display_columns && column < coordinates::MAX_X;
+    column < display_columns && column + xleft < coordinates::MAX_X;
     ++column
   )
   {
     tb_set_cell(
       (column * CELL_WIDTH) + 3 + 4,
       0,
-      'A' + column,
+      'A' + xleft + column,
       UI_FOREGROUND,
       UI_BACKGROUND
     );
@@ -249,7 +275,7 @@ render_cell(
   }
 
   tb_print(
-    (cell.coordinates.x * CELL_WIDTH) + 3,
+    (CELL_WIDTH * (cell.coordinates.x - xleft)) + 3,
     cell.coordinates.y - xtop + 1,
     is_selected ? CURSOR_FOREGROUND : CELL_FOREGROUND,
     is_selected ? CURSOR_BACKGROUND : CELL_BACKGROUND,
@@ -265,16 +291,25 @@ render_cell(
 static void
 render_sheet(struct sheet& sheet)
 {
-  const auto height = tb_height() - 3;
+  const auto height = get_page_height();
+  const auto width = get_page_width();
   bool cursor_rendered = false;
 
-  for (int y = 0; y < height; ++y)
+  for (int y = 0; y < height && y < coordinates::MAX_Y; ++y)
   {
-    for (int x = 0; x < coordinates::MAX_X; ++x)
+    for (int x = 0; x < width && x < coordinates::MAX_X; ++x)
     {
-      if (const auto cell = sheet.get({ x, y + xtop }))
+      if (const auto cell = sheet.get({ x + xleft, y + xtop }))
       {
         render_cell(*cell, sheet.context, cursor_rendered);
+      } else {
+        tb_print(
+          (x * CELL_WIDTH) + 3,
+          y + 1,
+          CELL_FOREGROUND,
+          CELL_BACKGROUND,
+          EMPTY_CELL.c_str()
+        );
       }
     }
   }
@@ -282,11 +317,11 @@ render_sheet(struct sheet& sheet)
   if (!cursor_rendered)
   {
     tb_print(
-      (CELL_WIDTH * cursor.x) + 3,
+      (CELL_WIDTH * (cursor.x - xleft)) + 3,
       cursor.y - xtop + 1,
       CURSOR_FOREGROUND,
       CURSOR_BACKGROUND,
-      std::string(CELL_WIDTH, ' ').c_str()
+      EMPTY_CELL.c_str()
     );
   }
 }
