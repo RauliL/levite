@@ -201,6 +201,7 @@ render_status(struct sheet& sheet)
 
   const auto height = tb_height();
   const auto name = encode(cursor.get_name());
+  const auto cell = sheet.get(cursor);
 
   if (current_mode == mode::insert || current_mode == mode::command)
   {
@@ -215,7 +216,7 @@ render_status(struct sheet& sheet)
     );
     tb_set_cursor(input_cursor + name.length() + 1, height - 1);
   }
-  else if (const auto cell = sheet.get(cursor))
+  else if (cell)
   {
     tb_printf(
       0,
@@ -234,7 +235,7 @@ render_status(struct sheet& sheet)
     height - 2,
     STATUS_FOREGROUND,
     STATUS_BACKGROUND,
-    encode(message).c_str()
+    (cell && cell->error ? *cell->error : encode(message)).c_str()
   );
 }
 
@@ -294,6 +295,8 @@ render_sheet(struct sheet& sheet)
   const auto height = get_page_height();
   const auto width = get_page_width();
   bool cursor_rendered = false;
+
+  sheet.reset_errors();
 
   for (int y = 0; y < height && y < coordinates::MAX_Y; ++y)
   {

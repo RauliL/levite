@@ -83,7 +83,7 @@ coordinates::get_name() const
   return decode(buffer);
 }
 
-laskin::value
+cell::value_type
 cell::evaluate(laskin::context& context) const
 {
   if (is_formula())
@@ -97,8 +97,10 @@ cell::evaluate(laskin::context& context) const
 
       return context.pop();
     }
-    catch (const laskin::error&)
+    catch (const laskin::error& e)
     {
+      error = e.message();
+
       return laskin::value::make_string(U"#ERROR");
     }
   }

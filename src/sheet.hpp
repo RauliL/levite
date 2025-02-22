@@ -93,8 +93,11 @@ struct std::hash<coordinates>
 
 struct cell
 {
+  using value_type = laskin::value;
+
   struct coordinates coordinates;
-  laskin::value value;
+  value_type value;
+  mutable std::optional<std::string> error;
 
   inline bool
   is_formula() const
@@ -115,7 +118,7 @@ struct cell
     return value.to_string();
   }
 
-  laskin::value
+  value_type
   evaluate(laskin::context& context) const;
 };
 
@@ -162,4 +165,16 @@ struct sheet
 
   bool
   save(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
+
+  inline void
+  reset_errors()
+  {
+    for (const auto& cell : grid)
+    {
+      if (cell.second && cell.second->error)
+      {
+        cell.second->error.reset();
+      }
+    }
+  }
 };
