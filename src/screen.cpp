@@ -188,7 +188,11 @@ render_ui()
       UI_BACKGROUND
     );
   }
-  for (int y = 0, row = xtop; y < height - 3; ++y, ++row)
+  for (
+    int y = 0, row = xtop;
+    y < height - 3 && row < coordinates::MAX_Y;
+    ++y, ++row
+  )
   {
     tb_printf(0, y + 1, UI_FOREGROUND, UI_BACKGROUND, "%3d", row + 1);
   }
