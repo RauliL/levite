@@ -23,3 +23,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#pragma once
+
+#include <optional>
+#include <string>
+
+namespace setting
+{
+  enum class key
+  {
+    foreground,
+    background,
+    cell_foreground,
+    cell_background,
+    status_foreground,
+    status_background,
+    cursor_foreground,
+    cursor_background,
+  };
+
+  std::optional<key> find_by_name(const std::u32string& name);
+
+  int get(enum key key);
+
+  std::optional<std::u32string> set(enum key key, const std::u32string& value);
+}

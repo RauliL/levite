@@ -25,7 +25,9 @@
  */
 #include <peelo/unicode/encoding/utf8.hpp>
 
+#include "./color.hpp"
 #include "./screen.hpp"
+#include "./setting.hpp"
 #include "./sheet.hpp"
 #include "./termbox2.h"
 
@@ -86,6 +88,40 @@ cmd_quit(
 }
 
 static void
+cmd_set(
+  sheet&,
+  const std::u32string&,
+  const std::optional<std::u32string>& arg
+)
+{
+  if (arg)
+  {
+    const auto index = arg->find(U'=');
+    const auto name = index ==
+      std::u32string::npos
+        ? *arg
+        : arg->substr(0, index);
+
+    if (const auto key = setting::find_by_name(name))
+    {
+      if (index != std::u32string::npos)
+      {
+        if (const auto error = setting::set(*key, arg->substr(index + 1)))
+        {
+          message = *error;
+        }
+      } else {
+        message = color::get_name(setting::get(*key));
+      }
+    } else {
+      message = U"Unrecognized setting.";
+    }
+  } else {
+    message = U"Missing setting name.";
+  }
+}
+
+static void
 cmd_write(
   sheet& sheet,
   const std::u32string&,
@@ -119,6 +155,8 @@ static const std::unordered_map<std::u32string, command_callback> commands =
   { U"q!", cmd_quit },
   { U"quit", cmd_quit },
   { U"quit!", cmd_quit },
+  { U"se", cmd_set },
+  { U"set", cmd_set },
   { U"w", cmd_write },
   { U"write", cmd_write },
 };

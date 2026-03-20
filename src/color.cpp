@@ -23,3 +23,61 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <optional>
+#include <string>
+#include <unordered_map>
+
+#include "./termbox2.h"
+
+static const std::unordered_map<std::u32string, int> mapping =
+{
+  { U"default", TB_DEFAULT },
+  { U"black", TB_BLACK },
+  { U"red", TB_RED },
+  { U"green", TB_GREEN },
+  { U"yellow", TB_YELLOW },
+  { U"blue", TB_BLUE },
+  { U"magenta", TB_MAGENTA },
+  { U"cyan", TB_CYAN },
+  { U"white", TB_WHITE },
+
+  { U"bright", TB_DEFAULT | TB_BRIGHT },
+  { U"bright-black", TB_BLACK | TB_BRIGHT },
+  { U"bright-red", TB_RED | TB_BRIGHT },
+  { U"bright-green", TB_GREEN | TB_BRIGHT },
+  { U"bright-yellow", TB_YELLOW | TB_BRIGHT },
+  { U"bright-blue", TB_BLUE | TB_BRIGHT },
+  { U"bright-magenta", TB_MAGENTA | TB_BRIGHT },
+  { U"bright-cyan", TB_CYAN | TB_BRIGHT },
+  { U"bright-white", TB_WHITE | TB_BRIGHT },
+};
+
+namespace color
+{
+  std::optional<int>
+  find_by_name(const std::u32string& name)
+  {
+    const auto it = mapping.find(name);
+
+    if (it != std::end(mapping))
+    {
+      return it->second;
+    }
+
+    return std::nullopt;
+  }
+
+  std::u32string
+  get_name(int color)
+  {
+    for (const auto& entry : mapping)
+    {
+      if (entry.second == color)
+      {
+        return entry.first;
+      }
+    }
+
+    return U"unknown";
+  }
+}

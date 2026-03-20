@@ -21,9 +21,11 @@ FetchContent_MakeAvailable(laskin rapidcsv)
 
 add_executable(
   levite
+  ./src/color.cpp
   ./src/command.cpp
   ./src/event.cpp
   ./src/main.cpp
+  ./src/setting.cpp
   ./src/screen.cpp
   ./src/sheet.cpp
   ./src/termbox2.cpp
