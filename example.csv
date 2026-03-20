@@ -1,0 +1,11 @@
+      ITEM,       NO.,      UNIT,      COST
+      ----,       ---,      ----,      ----
+MUCK RAKE,43,12.95,=B3 C3 *
+BUZZ CUT,15,6.75,=B4 C4 *
+TOE TONER,250,49.95,=B5 C5 *
+EYE SNUFF,2,4.95,=B6 C6 *
+,,,----------
+,,SUBTOTAL,"=[D3, D4, D5, D6] sum"
+,9.75,% TAX,=D8 B9 100 / *
+,,,----------
+,,,"=[D8, D9] sum"
