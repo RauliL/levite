@@ -160,7 +160,7 @@ struct sheet
   bool
   join(const coordinates& c1, const coordinates& c2);
 
-  bool
+  std::optional<std::u32string>
   load(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
 
   bool

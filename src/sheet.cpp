@@ -208,10 +208,15 @@ sheet::join(const coordinates& c1, const coordinates& c2)
   return false;
 }
 
-bool
+std::optional<std::u32string>
 sheet::load(const std::filesystem::path& path, char separator)
 {
   using peelo::unicode::encoding::utf8::decode;
+
+  if (!std::filesystem::exists(path))
+  {
+    return U"File does not exist.";
+  }
 
   rapidcsv::Document doc(
     path.string(),
@@ -222,7 +227,7 @@ sheet::load(const std::filesystem::path& path, char separator)
 
   if (size > coordinates::MAX_Y)
   {
-    return false;
+    return U"Spreadsheet too long.";
   }
   grid.clear();
   for (std::size_t i = 0; i < size; ++i)
@@ -231,7 +236,7 @@ sheet::load(const std::filesystem::path& path, char separator)
 
     if (row.size() > coordinates::MAX_X)
     {
-      return false;
+      return U"Spreadsheet too wide.";
     }
     for (std::size_t j = 0; j < row.size(); ++j)
     {
@@ -243,7 +248,7 @@ sheet::load(const std::filesystem::path& path, char separator)
   }
   modified = false;
 
-  return true;
+  return std::nullopt;
 }
 
 static std::string

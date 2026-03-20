@@ -61,11 +61,11 @@ cmd_edit(
     message = U"No filename.";
     return;
   }
-  if (sheet.load(*sheet.filename, sheet.separator))
+  if (const auto error = sheet.load(*sheet.filename, sheet.separator))
   {
-    message = U"File loaded.";
+    message = *error;
   } else {
-    message = U"Error loading file.";
+    message = U"File loaded.";
   }
 }
 

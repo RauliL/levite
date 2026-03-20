@@ -25,6 +25,8 @@
  */
 #include <cstring>
 
+#include <peelo/unicode/encoding/utf8.hpp>
+
 #include "./sheet.hpp"
 #include "./termbox2.h"
 
@@ -134,12 +136,19 @@ parse_args(struct sheet& sheet, int argc, char** argv)
 int
 main(int argc, char** argv)
 {
+  using peelo::unicode::encoding::utf8::encode;
+
   struct sheet sheet;
 
   parse_args(sheet, argc, argv);
   if (sheet.filename)
   {
-    sheet.load(*sheet.filename, sheet.separator);
+    if (const auto error = sheet.load(*sheet.filename, sheet.separator))
+    {
+      std::cerr << encode(*error) << std::endl;
+
+      return EXIT_FAILURE;
+    }
   }
   tb_init();
   tb_hide_cursor();
