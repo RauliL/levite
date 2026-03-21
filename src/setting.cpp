@@ -25,37 +25,53 @@
  */
 #include <unordered_map>
 
+#include <peelo/unicode/encoding/utf8.hpp>
+
 #include "./color.hpp"
 #include "./setting.hpp"
 #include "./termbox2.h"
 
 namespace setting
 {
-  static std::unordered_map<key, int> mapping =
+  enum class type
   {
-    { key::foreground, TB_BLACK },
-    { key::background, TB_GREEN },
-    { key::cell_foreground, TB_GREEN },
-    { key::cell_background, TB_DEFAULT },
-    { key::status_foreground, TB_DEFAULT },
-    { key::status_background, TB_DEFAULT },
-    { key::cursor_foreground, TB_BLACK },
-    { key::cursor_background, TB_GREEN | TB_BRIGHT },
+    color,
+    number,
+  };
+
+  struct variable
+  {
+    enum type type;
+    int value;
+  };
+
+  static std::unordered_map<key, variable> mapping =
+  {
+    { key::background, { type::color, TB_GREEN } },
+    { key::cell_background, { type::color, TB_DEFAULT } },
+    { key::cell_foreground, { type::color, TB_GREEN } },
+    { key::cell_width, { type::number, 10 } },
+    { key::cursor_background, { type::color, TB_GREEN | TB_BRIGHT } },
+    { key::cursor_foreground, { type::color, TB_BLACK } },
+    { key::foreground, { type::color, TB_BLACK } },
+    { key::status_background, { type::color, TB_DEFAULT } },
+    { key::status_foreground, { type::color, TB_DEFAULT } },
   };
 
   static const std::unordered_map<std::u32string, key> name_mapping =
   {
-    { U"foreground", key::foreground },
     { U"background", key::background },
-    { U"cell-foreground", key::cell_foreground },
     { U"cell-background", key::cell_background },
-    { U"status-foreground", key::status_foreground },
-    { U"status-background", key::status_background },
-    { U"cursor-foreground", key::cursor_foreground },
+    { U"cell-foreground", key::cell_foreground },
+    { U"cell-width", key::cell_width },
     { U"cursor-background", key::cursor_background },
+    { U"cursor-foreground", key::cursor_foreground },
+    { U"foreground", key::foreground },
+    { U"status-background", key::status_background },
+    { U"status-foreground", key::status_foreground },
   };
 
-  std::optional<key>
+  static std::optional<key>
   find_by_name(const std::u32string& name)
   {
     const auto it = name_mapping.find(name);
@@ -71,19 +87,59 @@ namespace setting
   int
   get(enum key key)
   {
-    return mapping[key];
+    return mapping[key].value;
+  }
+
+  std::u32string
+  get_for_display(const std::u32string& name)
+  {
+    using peelo::unicode::encoding::utf8::decode;
+
+    if (const auto key = find_by_name(name))
+    {
+      const auto& variable = mapping[*key];
+
+      if (variable.type == type::color)
+      {
+        return color::get_name(variable.value);
+      }
+
+      return decode(std::to_string(variable.value));
+    }
+
+    return U"Unrecognized variable.";
   }
 
   std::optional<std::u32string>
-  set(enum key key, const std::u32string& value)
+  set(const std::u32string& name, const std::u32string& value)
   {
-    if (const auto color = color::find_by_name(value))
-    {
-      mapping[key] = *color;
+    using peelo::unicode::encoding::utf8::encode;
 
-      return std::nullopt;
+    if (const auto key = find_by_name(name))
+    {
+      auto& variable = mapping[*key];
+
+      if (variable.type == type::color)
+      {
+        if (const auto color = color::find_by_name(value))
+        {
+          variable.value = *color;
+
+          return std::nullopt;
+        }
+      } else {
+        try
+        {
+          variable.value = std::stoi(encode(value));
+
+          return std::nullopt;
+        }
+        catch (const std::exception&) {};
+      }
+
+      return U"Invalid value.";
     }
 
-    return U"Invalid value.";
+    return U"Unrecognized variable.";
   }
 }

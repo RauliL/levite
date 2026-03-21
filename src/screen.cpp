@@ -33,9 +33,6 @@
 #include "./setting.hpp"
 #include "./termbox2.h"
 
-static constexpr int CELL_WIDTH = 10;
-static const std::string EMPTY_CELL = std::string(CELL_WIDTH, ' ');
-
 static int xtop;
 static int xleft;
 
@@ -45,7 +42,10 @@ coordinates cursor;
 static inline int
 get_page_width()
 {
-  return std::floor((static_cast<double>(tb_width() - 3)) / CELL_WIDTH);
+  return std::floor(
+    (static_cast<double>(tb_width() - 3)) /
+      setting::get(setting::key::cell_width)
+  );
 }
 
 static inline int
@@ -158,11 +158,12 @@ move_cursor(enum direction direction)
 static void
 render_ui()
 {
+  const auto cell_width = setting::get(setting::key::cell_width);
   const auto foreground = setting::get(setting::key::foreground);
   const auto background = setting::get(setting::key::background);
   const auto width = tb_width();
   const auto height = tb_height();
-  const auto display_columns = (width - 3) / CELL_WIDTH;
+  const auto display_columns = (width - 3) / cell_width;
 
   for (int x = 0; x < width; ++x)
   {
@@ -176,7 +177,7 @@ render_ui()
   )
   {
     tb_set_cell(
-      (column * CELL_WIDTH) + 3 + 4,
+      (column * cell_width) + 3 + (cell_width / 2),
       0,
       'A' + xleft + column,
       foreground,
@@ -254,6 +255,7 @@ render_cell(
 {
   using peelo::unicode::encoding::utf8::encode;
 
+  const auto cell_width = setting::get(setting::key::cell_width);
   const auto is_selected = cell.coordinates == cursor;
   auto value = cell.evaluate(context);
   std::u32string result;
@@ -261,28 +263,28 @@ render_cell(
   if (value.is(laskin::value::type::string))
   {
     result = value.as_string();
-    if (result.length() > CELL_WIDTH)
+    if (result.length() > static_cast<unsigned int>(cell_width))
     {
-      result = result.substr(0, CELL_WIDTH - 1);
+      result = result.substr(0, cell_width - 1);
     }
-    else if (result.length() < CELL_WIDTH)
+    else if (result.length() < static_cast<unsigned int>(cell_width))
     {
-      result.append(CELL_WIDTH - result.length(), U' ');
+      result.append(cell_width - result.length(), U' ');
     }
   } else {
     result = value.to_string();
-    if (result.length() > CELL_WIDTH)
+    if (result.length() > static_cast<unsigned int>(cell_width))
     {
-      result = result.substr(0, CELL_WIDTH - 1);
+      result = result.substr(0, cell_width - 1);
     }
-    else if (result.length() < CELL_WIDTH)
+    else if (result.length() < static_cast<unsigned int>(cell_width))
     {
-      result.insert(0, CELL_WIDTH - result.length(), U' ');
+      result.insert(0, cell_width - result.length(), U' ');
     }
   }
 
   tb_print(
-    (CELL_WIDTH * (cell.coordinates.x - xleft)) + 3,
+    (cell_width * (cell.coordinates.x - xleft)) + 3,
     cell.coordinates.y - xtop + 1,
     setting::get(
       is_selected
@@ -306,6 +308,7 @@ render_cell(
 static void
 render_sheet(struct sheet& sheet)
 {
+  const auto cell_width = setting::get(setting::key::cell_width);
   const auto cell_foreground = setting::get(setting::key::cell_foreground);
   const auto cell_background = setting::get(setting::key::cell_background);
   const auto height = get_page_height();
@@ -323,11 +326,11 @@ render_sheet(struct sheet& sheet)
         render_cell(*cell, sheet.context, cursor_rendered);
       } else {
         tb_print(
-          (x * CELL_WIDTH) + 3,
+          (x * cell_width) + 3,
           y + 1,
           cell_foreground,
           cell_background,
-          EMPTY_CELL.c_str()
+          std::string(cell_width, ' ').c_str()
         );
       }
     }
@@ -336,11 +339,11 @@ render_sheet(struct sheet& sheet)
   if (!cursor_rendered)
   {
     tb_print(
-      (CELL_WIDTH * (cursor.x - xleft)) + 3,
+      (cell_width * (cursor.x - xleft)) + 3,
       cursor.y - xtop + 1,
       setting::get(setting::key::cursor_foreground),
       setting::get(setting::key::cursor_background),
-      EMPTY_CELL.c_str()
+      std::string(cell_width, ' ').c_str()
     );
   }
 }

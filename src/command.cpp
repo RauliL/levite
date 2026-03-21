@@ -25,7 +25,6 @@
  */
 #include <peelo/unicode/encoding/utf8.hpp>
 
-#include "./color.hpp"
 #include "./screen.hpp"
 #include "./setting.hpp"
 #include "./sheet.hpp"
@@ -98,26 +97,18 @@ cmd_set(
   if (arg)
   {
     const auto index = arg->find(U'=');
-    const auto name = index ==
-      std::u32string::npos
-        ? *arg
-        : utils::trim(arg->substr(0, index));
 
-    if (const auto key = setting::find_by_name(name))
+    if (index != std::u32string::npos)
     {
-      if (index != std::u32string::npos)
-      {
-        const auto value = utils::trim(arg->substr(index + 1));
+      const auto name = utils::trim(arg->substr(0, index));
+      const auto value = utils::trim(arg->substr(index + 1));
 
-        if (const auto error = setting::set(*key, value))
-        {
-          message = *error;
-        }
-      } else {
-        message = color::get_name(setting::get(*key));
+      if (const auto error = setting::set(name, value))
+      {
+        message = *error;
       }
     } else {
-      message = U"Unrecognized setting.";
+      message = setting::get_for_display(utils::trim(*arg));
     }
   } else {
     message = U"Missing setting name.";

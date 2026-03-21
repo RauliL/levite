@@ -32,19 +32,23 @@ namespace setting
 {
   enum class key
   {
-    foreground,
     background,
-    cell_foreground,
     cell_background,
-    status_foreground,
-    status_background,
-    cursor_foreground,
+    cell_foreground,
+    cell_width,
     cursor_background,
+    cursor_foreground,
+    foreground,
+    status_background,
+    status_foreground,
   };
 
-  std::optional<key> find_by_name(const std::u32string& name);
+  int
+  get(enum key key);
 
-  int get(enum key key);
+  std::u32string
+  get_for_display(const std::u32string& name);
 
-  std::optional<std::u32string> set(enum key key, const std::u32string& value);
+  std::optional<std::u32string>
+  set(const std::u32string& name, const std::u32string& value);
 }
