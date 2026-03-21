@@ -23,68 +23,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#pragma once
+#include <sstream>
 
-#include <filesystem>
+#include <laskin/error.hpp>
 
 #include "./cell.hpp"
 
-struct sheet
+cell::value_type
+cell::evaluate(laskin::context& context) const
 {
-  using container_type = std::unordered_map<coordinates, std::optional<cell>>;
-
-  static constexpr char DEFAULT_SEPARATOR = ',';
-
-  std::optional<std::filesystem::path> filename;
-  bool modified;
-  char separator;
-  container_type grid;
-  laskin::context context;
-
-  explicit sheet();
-
-  inline std::optional<cell>
-  get(const coordinates& coords) const
+  if (is_formula())
   {
-    const auto it = grid.find(coords);
+    std::stringstream out;
 
-    return it != std::end(grid) && it->second ? it->second : std::nullopt;
-  }
-
-  inline void
-  set(const coordinates& coords, const laskin::value& value)
-  {
-    grid[coords] = { coords, value };
-    modified = true;
-  }
-
-  void
-  set(const coordinates& coords, const std::u32string& input);
-
-  void
-  erase(const coordinates& coords);
-
-  bool
-  join(const coordinates& c1, const coordinates& c2);
-
-  std::optional<std::u32string>
-  load(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
-
-  bool
-  save(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
-
-  inline void
-  reset_errors()
-  {
-    for (const auto& cell : grid)
+    try
     {
-      if (cell.second && cell.second->error)
-      {
-        cell.second->error.reset();
-      }
+      context.clear();
+      laskin::quote::parse(value.as_string().substr(1)).call(context, out);
+
+      return context.pop();
+    }
+    catch (const laskin::error& e)
+    {
+      error = e.message();
+
+      return laskin::value::make_string(U"#ERROR");
     }
   }
 
-  void
-  run_command(const std::u32string& input);
-};
+  return value;
+}

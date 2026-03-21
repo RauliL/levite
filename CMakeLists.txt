@@ -28,10 +28,13 @@ FetchContent_MakeAvailable(laskin rapidcsv PeeloXdg)
 
 add_executable(
   levite
+  ./src/cell.cpp
   ./src/color.cpp
   ./src/command.cpp
+  ./src/coordinates.cpp
   ./src/event.cpp
   ./src/main.cpp
+  ./src/range.cpp
   ./src/setting.cpp
   ./src/screen.cpp
   ./src/sheet.cpp
