@@ -23,27 +23,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <peelo/unicode/ctype/isspace.hpp>
-
 #include "./input.hpp"
 #include "./screen.hpp"
 #include "./termbox2.h"
+#include "./utils.hpp"
 
 mode current_mode = mode::normal;
 std::u32string input_buffer;
 std::u32string::size_type input_cursor;
-
-void run_command(struct sheet& sheet, const std::u32string& command);
-
-static inline bool
-is_blank()
-{
-  return input_buffer.empty() || std::all_of(
-    std::begin(input_buffer),
-    std::end(input_buffer),
-    peelo::unicode::ctype::isspace
-  );
-}
 
 static void
 insert_mode(struct sheet& sheet, const tb_event& event)
@@ -60,16 +47,16 @@ insert_mode(struct sheet& sheet, const tb_event& event)
     case TB_KEY_ENTER:
       if (current_mode == mode::insert)
       {
-        if (is_blank())
+        if (utils::is_blank(input_buffer))
         {
           sheet.erase(cursor);
         } else {
           sheet.set(cursor, input_buffer);
         }
       }
-      else if (!is_blank())
+      else if (!utils::is_blank(input_buffer) && input_buffer[0] == ':')
       {
-        run_command(sheet, input_buffer);
+        sheet.run_command(input_buffer);
       }
       input_buffer.clear();
       input_cursor = 0;

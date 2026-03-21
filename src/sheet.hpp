@@ -177,4 +177,7 @@ struct sheet
       }
     }
   }
+
+  void
+  run_command(const std::u32string& input);
 };

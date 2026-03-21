@@ -30,16 +30,17 @@
 #include "./setting.hpp"
 #include "./sheet.hpp"
 #include "./termbox2.h"
+#include "./utils.hpp"
 
 using command_callback = void(*)(
-  sheet&,
+  sheet*,
   const std::u32string&,
   const std::optional<std::u32string>&
 );
 
 static void
 cmd_echo(
-  struct sheet&,
+  struct sheet*,
   const std::u32string&,
   const std::optional<std::u32string>& arg
 )
@@ -49,21 +50,21 @@ cmd_echo(
 
 static void
 cmd_edit(
-  struct sheet& sheet,
+  struct sheet* sheet,
   const std::u32string&,
   const std::optional<std::u32string>& arg
 )
 {
   if (arg)
   {
-    sheet.filename = *arg;
+    sheet->filename = *arg;
   }
-  else if (!sheet.filename)
+  else if (!sheet->filename)
   {
     message = U"No filename.";
     return;
   }
-  if (const auto error = sheet.load(*sheet.filename, sheet.separator))
+  if (const auto error = sheet->load(*sheet->filename, sheet->separator))
   {
     message = *error;
   } else {
@@ -73,12 +74,12 @@ cmd_edit(
 
 static void
 cmd_quit(
-  struct sheet& sheet,
+  struct sheet* sheet,
   const std::u32string& command,
   const std::optional<std::u32string>&
 )
 {
-  if (sheet.modified && command.back() != '!')
+  if (sheet->modified && command.back() != '!')
   {
     message = U"File modified.";
     return;
@@ -89,7 +90,7 @@ cmd_quit(
 
 static void
 cmd_set(
-  sheet&,
+  sheet*,
   const std::u32string&,
   const std::optional<std::u32string>& arg
 )
@@ -100,13 +101,15 @@ cmd_set(
     const auto name = index ==
       std::u32string::npos
         ? *arg
-        : arg->substr(0, index);
+        : utils::trim(arg->substr(0, index));
 
     if (const auto key = setting::find_by_name(name))
     {
       if (index != std::u32string::npos)
       {
-        if (const auto error = setting::set(*key, arg->substr(index + 1)))
+        const auto value = utils::trim(arg->substr(index + 1));
+
+        if (const auto error = setting::set(*key, value))
         {
           message = *error;
         }
@@ -123,21 +126,21 @@ cmd_set(
 
 static void
 cmd_write(
-  sheet& sheet,
+  sheet* sheet,
   const std::u32string&,
   const std::optional<std::u32string>& arg
 )
 {
   if (arg)
   {
-    sheet.filename = *arg;
+    sheet->filename = *arg;
   }
-  else if (!sheet.filename)
+  else if (!sheet->filename)
   {
     message = U"No filename.";
     return;
   }
-  if (sheet.save(*sheet.filename, sheet.separator))
+  if (sheet->save(*sheet->filename, sheet->separator))
   {
     message = U"File saved.";
   } else {
@@ -162,30 +165,39 @@ static const std::unordered_map<std::u32string, command_callback> commands =
 };
 
 void
-run_command(struct sheet& sheet, const std::u32string& input)
+sheet::run_command(const std::u32string& input)
 {
   using peelo::unicode::encoding::utf8::encode;
 
-  if (input.empty() || input[0] != ':')
+  auto command = input;
+
+  while (!command.empty() && command[0] == ':')
+  {
+    command = command.substr(1);
+  }
+  if (utils::is_blank(command) || command[0] == '"')
   {
     return;
   }
 
-  auto command = input.substr(1);
   const auto index = command.find(' ');
   std::optional<std::u32string> arg;
 
   if (index != std::u32string::npos)
   {
-    arg = command.substr(index + 1);
-    command = command.substr(0, index);
+    arg = utils::trim(command.substr(index + 1));
+    if (utils::is_blank(*arg))
+    {
+      arg.reset();
+    }
+    command = utils::trim(command.substr(0, index));
   }
 
   const auto function = commands.find(command);
 
   if (function != std::end(commands))
   {
-    function->second(sheet, command, arg);
+    function->second(this, command, arg);
     return;
   }
 
