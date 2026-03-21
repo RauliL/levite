@@ -23,3 +23,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#pragma once
+
+#include <optional>
+#include <string>
+
+namespace color
+{
+  std::optional<int> find_by_name(const std::u32string& name);
+
+  std::u32string get_name(int color);
+}

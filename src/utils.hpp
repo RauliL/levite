@@ -23,3 +23,25 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#pragma once
+
+#include <algorithm>
+#include <string>
+
+#include <peelo/unicode/ctype/isspace.hpp>
+
+namespace utils
+{
+  inline bool
+  is_blank(const std::u32string& input)
+  {
+    return input.empty() || std::all_of(
+      std::begin(input),
+      std::end(input),
+      peelo::unicode::ctype::isspace
+    );
+  }
+
+  std::u32string
+  trim(const std::u32string& input);
+}

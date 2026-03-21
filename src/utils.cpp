@@ -23,3 +23,40 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <peelo/unicode/ctype/isspace.hpp>
+
+#include "./utils.hpp"
+
+namespace utils
+{
+  std::u32string
+  trim(const std::u32string& input)
+  {
+    using peelo::unicode::ctype::isspace;
+
+    const auto length = input.length();
+    std::u32string::size_type i;
+    std::u32string::size_type j;
+
+    for (i = 0; i < length; ++i)
+    {
+      if (!isspace(input[i]))
+      {
+        break;
+      }
+    }
+    for (j = length; j != 0; --j)
+    {
+      if (!isspace(input[j - 1]))
+      {
+        break;
+      }
+    }
+    if (i != 0 || j != length)
+    {
+      return input.substr(i, j -i);
+    }
+
+    return input;
+  }
+}

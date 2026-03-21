@@ -17,16 +17,26 @@ FetchContent_Declare(
   GIT_TAG
     v8.84
 )
-FetchContent_MakeAvailable(laskin rapidcsv)
+FetchContent_Declare(
+  PeeloXdg
+  GIT_REPOSITORY
+    https://github.com/peelonet/peelo-xdg
+  GIT_TAG
+    v1.1.0
+)
+FetchContent_MakeAvailable(laskin rapidcsv PeeloXdg)
 
 add_executable(
   levite
+  ./src/color.cpp
   ./src/command.cpp
   ./src/event.cpp
   ./src/main.cpp
+  ./src/setting.cpp
   ./src/screen.cpp
   ./src/sheet.cpp
   ./src/termbox2.cpp
+  ./src/utils.cpp
 )
 
 target_compile_options(
@@ -46,6 +56,7 @@ target_link_libraries(
   PRIVATE
     laskin
     rapidcsv
+    PeeloXdg
 )
 
 install(

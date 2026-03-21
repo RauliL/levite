@@ -24,9 +24,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <cstring>
+#include <fstream>
 
 #include <peelo/unicode/encoding/utf8.hpp>
+#include <peelo/xdg.hpp>
 
+#include "./screen.hpp"
 #include "./sheet.hpp"
 #include "./termbox2.h"
 
@@ -133,6 +136,54 @@ parse_args(struct sheet& sheet, int argc, char** argv)
   }
 }
 
+static bool
+run_init(struct sheet& sheet)
+{
+  using peelo::unicode::encoding::utf8::decode;
+  using peelo::unicode::encoding::utf8::encode;
+
+  if (const auto config_dir_path = peelo::xdg::config_dir())
+  {
+    const auto init_path = *config_dir_path / "levite" / "init.levite";
+
+    if (std::filesystem::exists(init_path))
+    {
+      std::ifstream file(init_path);
+      std::string line;
+      unsigned int counter = 0;
+      bool good = true;
+
+      if (!file.good())
+      {
+        std::cerr << "Unable to read `init.levite'." << std::endl;
+
+        return false;
+      }
+      while (std::getline(file, line))
+      {
+        ++counter;
+        sheet.run_command(decode(line));
+        if (!message.empty())
+        {
+          std::cerr
+            << "init.levite:"
+            << counter
+            << ": "
+            << encode(message)
+            << std::endl;
+          message.clear();
+          good = false;
+        }
+      }
+      file.close();
+
+      return good;
+    }
+  }
+
+  return true;
+}
+
 int
 main(int argc, char** argv)
 {
@@ -149,6 +200,13 @@ main(int argc, char** argv)
 
       return EXIT_FAILURE;
     }
+  }
+  if (!run_init(sheet))
+  {
+    std::string dummy;
+
+    std::cerr << "Press ENTER to continue." << std::endl;
+    std::getline(std::cin, dummy);
   }
   tb_init();
   tb_hide_cursor();

@@ -30,18 +30,11 @@
 
 #include "./input.hpp"
 #include "./screen.hpp"
+#include "./setting.hpp"
 #include "./termbox2.h"
 
 static constexpr int CELL_WIDTH = 10;
 static const std::string EMPTY_CELL = std::string(CELL_WIDTH, ' ');
-static constexpr int UI_FOREGROUND = TB_BLACK;
-static constexpr int UI_BACKGROUND = TB_GREEN;
-static constexpr int CELL_FOREGROUND = TB_GREEN;
-static constexpr int CELL_BACKGROUND = TB_DEFAULT;
-static constexpr int STATUS_FOREGROUND = TB_DEFAULT;
-static constexpr int STATUS_BACKGROUND = TB_DEFAULT;
-static constexpr int CURSOR_FOREGROUND = TB_BLACK;
-static constexpr int CURSOR_BACKGROUND = TB_GREEN | TB_BRIGHT;
 
 static int xtop;
 static int xleft;
@@ -165,14 +158,16 @@ move_cursor(enum direction direction)
 static void
 render_ui()
 {
+  const auto foreground = setting::get(setting::key::foreground);
+  const auto background = setting::get(setting::key::background);
   const auto width = tb_width();
   const auto height = tb_height();
   const auto display_columns = (width - 3) / CELL_WIDTH;
 
   for (int x = 0; x < width; ++x)
   {
-    tb_set_cell(x, 0, ' ', UI_FOREGROUND, UI_BACKGROUND);
-    tb_set_cell(x, height - 1, ' ', UI_FOREGROUND, UI_BACKGROUND);
+    tb_set_cell(x, 0, ' ', foreground, background);
+    tb_set_cell(x, height - 1, ' ', foreground, background);
   }
   for (
     int column = 0;
@@ -184,8 +179,8 @@ render_ui()
       (column * CELL_WIDTH) + 3 + 4,
       0,
       'A' + xleft + column,
-      UI_FOREGROUND,
-      UI_BACKGROUND
+      foreground,
+      background
     );
   }
   for (
@@ -194,7 +189,7 @@ render_ui()
     ++y, ++row
   )
   {
-    tb_printf(0, y + 1, UI_FOREGROUND, UI_BACKGROUND, "%3d", row + 1);
+    tb_printf(0, y + 1, foreground, background, "%3d", row + 1);
   }
 }
 
@@ -212,8 +207,8 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      CURSOR_FOREGROUND,
-      CURSOR_BACKGROUND,
+      setting::get(setting::key::cursor_foreground),
+      setting::get(setting::key::cursor_background),
       "%s %s",
       name.c_str(),
       encode(input_buffer).c_str()
@@ -225,20 +220,27 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      UI_FOREGROUND,
-      UI_BACKGROUND,
+      setting::get(setting::key::foreground),
+      setting::get(setting::key::background),
       "%s %s",
       name.c_str(),
       encode(cell->get_source()).c_str()
     );
   } else {
-    tb_printf(0, height - 1, UI_FOREGROUND, UI_BACKGROUND, "%s", name.c_str());
+    tb_printf(
+      0,
+      height - 1,
+      setting::get(setting::key::foreground),
+      setting::get(setting::key::background),
+      "%s",
+      name.c_str()
+    );
   }
   tb_printf(
     0,
     height - 2,
-    STATUS_FOREGROUND,
-    STATUS_BACKGROUND,
+    setting::get(setting::key::status_foreground),
+    setting::get(setting::key::status_background),
     (cell && cell->error ? *cell->error : encode(message)).c_str()
   );
 }
@@ -282,8 +284,16 @@ render_cell(
   tb_print(
     (CELL_WIDTH * (cell.coordinates.x - xleft)) + 3,
     cell.coordinates.y - xtop + 1,
-    is_selected ? CURSOR_FOREGROUND : CELL_FOREGROUND,
-    is_selected ? CURSOR_BACKGROUND : CELL_BACKGROUND,
+    setting::get(
+      is_selected
+        ? setting::key::cursor_foreground
+        : setting::key::cell_foreground
+    ),
+    setting::get(
+      is_selected
+        ? setting::key::cursor_background
+        : setting::key::cell_background
+    ),
     encode(result).c_str()
   );
 
@@ -296,6 +306,8 @@ render_cell(
 static void
 render_sheet(struct sheet& sheet)
 {
+  const auto cell_foreground = setting::get(setting::key::cell_foreground);
+  const auto cell_background = setting::get(setting::key::cell_background);
   const auto height = get_page_height();
   const auto width = get_page_width();
   bool cursor_rendered = false;
@@ -313,8 +325,8 @@ render_sheet(struct sheet& sheet)
         tb_print(
           (x * CELL_WIDTH) + 3,
           y + 1,
-          CELL_FOREGROUND,
-          CELL_BACKGROUND,
+          cell_foreground,
+          cell_background,
           EMPTY_CELL.c_str()
         );
       }
@@ -326,8 +338,8 @@ render_sheet(struct sheet& sheet)
     tb_print(
       (CELL_WIDTH * (cursor.x - xleft)) + 3,
       cursor.y - xtop + 1,
-      CURSOR_FOREGROUND,
-      CURSOR_BACKGROUND,
+      setting::get(setting::key::cursor_foreground),
+      setting::get(setting::key::cursor_background),
       EMPTY_CELL.c_str()
     );
   }
