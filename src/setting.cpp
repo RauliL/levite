@@ -130,9 +130,14 @@ namespace setting
       } else {
         try
         {
-          variable.value = std::stoi(encode(value));
+          const auto number = std::stoi(encode(value));
 
-          return std::nullopt;
+          if (number > 0)
+          {
+            variable.value = number;
+
+            return std::nullopt;
+          }
         }
         catch (const std::exception&) {};
       }
