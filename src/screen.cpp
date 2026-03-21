@@ -199,7 +199,7 @@ render_status(struct sheet& sheet)
   using peelo::unicode::encoding::utf8::encode;
 
   const auto height = tb_height();
-  const auto name = encode(cursor.get_name());
+  const auto name = encode(cursor.to_string());
   const auto cell = sheet.get(cursor);
 
   if (current_mode == mode::insert || current_mode == mode::command)

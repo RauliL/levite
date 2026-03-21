@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Rauli Laine
+ * Copyright (c) 2025-2026, Rauli Laine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,90 +23,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <sstream>
-
 #include <laskin/chrono.hpp>
 #include <laskin/error.hpp>
 #include <peelo/unicode/encoding/utf8.hpp>
 #include <rapidcsv.h>
 
+#include "./range.hpp"
 #include "./sheet.hpp"
-
-bool
-coordinates::is_valid_name(const std::u32string& input)
-{
-  return (
-    input.length() > 1 &&
-    (
-      (input[0] >= U'a' && input[0] <= U'z') ||
-      (input[0] >= U'A' && input[0] <= U'Z')
-    ) &&
-    std::all_of(
-      std::begin(input) + 1,
-      std::end(input),
-      [](const char32_t c)
-      {
-        return c >= U'0' && c <= U'9';
-      }
-    )
-  );
-}
-
-std::optional<coordinates>
-coordinates::parse(const std::u32string& input)
-{
-  using peelo::unicode::encoding::utf8::encode;
-
-  if (is_valid_name(input))
-  {
-    const auto x = std::toupper(input[0]) - 'A';
-    const auto y = std::stoi(encode(input.substr(1))) - 1;
-
-    if (is_valid(x, y))
-    {
-      return coordinates{ x, y };
-    }
-  }
-
-  return std::nullopt;
-}
-
-std::u32string
-coordinates::get_name() const
-{
-  using peelo::unicode::encoding::utf8::decode;
-
-  static char buffer[BUFSIZ];
-
-  std::snprintf(buffer, BUFSIZ, "%c%d", 'A' + x, y + 1);
-
-  return decode(buffer);
-}
-
-cell::value_type
-cell::evaluate(laskin::context& context) const
-{
-  if (is_formula())
-  {
-    std::stringstream out;
-
-    try
-    {
-      context.clear();
-      laskin::quote::parse(value.as_string().substr(1)).call(context, out);
-
-      return context.pop();
-    }
-    catch (const laskin::error& e)
-    {
-      error = e.message();
-
-      return laskin::value::make_string(U"#ERROR");
-    }
-  }
-
-  return value;
-}
 
 sheet::sheet()
   : modified(false)
@@ -116,7 +39,14 @@ sheet::sheet()
     {
       using peelo::unicode::encoding::utf8::encode;
 
-      if (const auto coords = coordinates::parse(name))
+      if (const auto range = range::parse(name))
+      {
+        if (const auto values = range->extract(*this))
+        {
+          return laskin::value::make_vector(*values);
+        }
+      }
+      else if (const auto coords = coordinates::parse(name))
       {
         const auto cell = this->grid.find(*coords);
 

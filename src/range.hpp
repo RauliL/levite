@@ -25,66 +25,18 @@
  */
 #pragma once
 
-#include <filesystem>
+#include <laskin/value.hpp>
 
-#include "./cell.hpp"
+#include "./coordinates.hpp"
 
-struct sheet
+struct range
 {
-  using container_type = std::unordered_map<coordinates, std::optional<cell>>;
+  coordinates begin;
+  coordinates end;
 
-  static constexpr char DEFAULT_SEPARATOR = ',';
+  static std::optional<range>
+  parse(const std::u32string& input);
 
-  std::optional<std::filesystem::path> filename;
-  bool modified;
-  char separator;
-  container_type grid;
-  laskin::context context;
-
-  explicit sheet();
-
-  inline std::optional<cell>
-  get(const coordinates& coords) const
-  {
-    const auto it = grid.find(coords);
-
-    return it != std::end(grid) && it->second ? it->second : std::nullopt;
-  }
-
-  inline void
-  set(const coordinates& coords, const laskin::value& value)
-  {
-    grid[coords] = { coords, value };
-    modified = true;
-  }
-
-  void
-  set(const coordinates& coords, const std::u32string& input);
-
-  void
-  erase(const coordinates& coords);
-
-  bool
-  join(const coordinates& c1, const coordinates& c2);
-
-  std::optional<std::u32string>
-  load(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
-
-  bool
-  save(const std::filesystem::path& path, char separator = DEFAULT_SEPARATOR);
-
-  inline void
-  reset_errors()
-  {
-    for (const auto& cell : grid)
-    {
-      if (cell.second && cell.second->error)
-      {
-        cell.second->error.reset();
-      }
-    }
-  }
-
-  void
-  run_command(const std::u32string& input);
+  std::optional<std::vector<laskin::value>>
+  extract(struct sheet& sheet) const;
 };
