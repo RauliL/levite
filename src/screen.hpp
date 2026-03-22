@@ -42,3 +42,4 @@ bool move_to(const coordinates& coords);
 bool scroll_up(int count);
 bool scroll_down(int count);
 bool move_cursor(enum direction direction);
+void click_on(int x, int y);

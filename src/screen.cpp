@@ -155,6 +155,41 @@ move_cursor(enum direction direction)
   return false;
 }
 
+void
+click_on(int x, int y)
+{
+  const auto cell_width = setting::get(setting::key::cell_width);
+  const auto page_width = get_page_width();
+  const auto page_height = get_page_height();
+
+  if (x < 3 || y < 1 || y > page_height)
+  {
+    return;
+  }
+
+  const int col_view = (x - 3) / cell_width;
+  const int row_view = y - 1;
+
+  if (
+    col_view < 0 ||
+    col_view >= page_width ||
+    row_view < 0 ||
+    row_view >= page_height
+  )
+  {
+    return;
+  }
+
+  const int sx = xleft + col_view;
+  const int sy = xtop + row_view;
+
+  if (coordinates::is_valid(sx, sy))
+  {
+    cursor.x = sx;
+    cursor.y = sy;
+  }
+}
+
 static void
 render_ui()
 {

@@ -209,6 +209,7 @@ main(int argc, char** argv)
     std::getline(std::cin, dummy);
   }
   tb_init();
+  tb_set_input_mode(TB_INPUT_ESC | TB_INPUT_MOUSE);
   tb_hide_cursor();
   for (;;)
   {

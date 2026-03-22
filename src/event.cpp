@@ -277,6 +277,28 @@ handle_event(struct sheet& sheet)
         break;
     }
   }
+  else if (event.type == TB_EVENT_MOUSE)
+  {
+    if (current_mode != mode::normal)
+    {
+      return;
+    }
+    switch (event.key)
+    {
+      case TB_KEY_MOUSE_WHEEL_UP:
+        move_cursor(direction::up);
+        break;
 
-  // TODO: Add support for mouse events.
+      case TB_KEY_MOUSE_WHEEL_DOWN:
+        move_cursor(direction::down);
+        break;
+
+      case TB_KEY_MOUSE_LEFT:
+        click_on(event.x, event.y);
+        break;
+
+      default:
+        break;
+    }
+  }
 }
