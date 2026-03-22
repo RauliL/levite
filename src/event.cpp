@@ -156,6 +156,7 @@ normal_mode(struct sheet& sheet, const tb_event& event)
 
     // Move one row downwards.
     case TB_KEY_ARROW_DOWN:
+    case TB_KEY_MOUSE_WHEEL_DOWN:
       move_cursor(direction::down);
       return;
 
@@ -171,6 +172,7 @@ normal_mode(struct sheet& sheet, const tb_event& event)
 
     // Move one row upwards.
     case TB_KEY_ARROW_UP:
+    case TB_KEY_MOUSE_WHEEL_UP:
       move_cursor(direction::up);
       return;
 
