@@ -86,12 +86,14 @@ scroll_up(int count)
 bool
 scroll_down(int count)
 {
-  if (xtop >= coordinates::MAX_Y)
+  const auto max_top = coordinates::MAX_Y - 1;
+
+  if (xtop >= max_top)
   {
     return false;
   }
-  xtop = std::min(coordinates::MAX_Y, xtop + count);
-  cursor.y = std::max(cursor.y, xtop);
+  xtop = std::min(max_top, xtop + count);
+  cursor.y = std::clamp(cursor.y, xtop, coordinates::MAX_Y - 1);
 
   return true;
 }
