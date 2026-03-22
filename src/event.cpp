@@ -41,6 +41,8 @@ std::u32string::size_type input_cursor;
 static void
 insert_mode(struct sheet& sheet, const tb_event& event)
 {
+  using peelo::unicode::ctype::isspace;
+
   switch (event.key)
   {
     case TB_KEY_ESC:
@@ -120,7 +122,23 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       input_buffer.erase(input_cursor);
       return;
 
-    // TODO: ^W: Deleting by word.
+    case TB_KEY_CTRL_W:
+      if (input_cursor != 0)
+      {
+        auto pos = input_cursor;
+
+        while (pos > 0 && isspace(input_buffer[pos - 1]))
+        {
+          --pos;
+        }
+        while (pos > 0 && !isspace(input_buffer[pos - 1]))
+        {
+          --pos;
+        }
+        input_buffer.erase(pos, input_cursor - pos);
+        input_cursor = pos;
+      }
+      return;
   }
 
   if (event.ch != 0)
