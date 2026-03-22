@@ -89,7 +89,18 @@ insert_mode(struct sheet& sheet, const tb_event& event)
 
     case TB_KEY_ARROW_LEFT:
     case TB_KEY_CTRL_B:
-      if (input_cursor > 0)
+      if (event.mod & TB_MOD_CTRL)
+      {
+        while (input_cursor > 0 && isspace(input_buffer[input_cursor - 1]))
+        {
+          --input_cursor;
+        }
+        while (input_cursor > 0 && !isspace(input_buffer[input_cursor - 1]))
+        {
+          --input_cursor;
+        }
+      }
+      else if (input_cursor > 0)
       {
         --input_cursor;
       }
@@ -97,7 +108,20 @@ insert_mode(struct sheet& sheet, const tb_event& event)
 
     case TB_KEY_ARROW_RIGHT:
     case TB_KEY_CTRL_F:
-      if (input_cursor < input_buffer.length())
+      if ((event.mod & TB_MOD_CTRL))
+      {
+        const auto len = input_buffer.length();
+
+        while (input_cursor < len && !isspace(input_buffer[input_cursor]))
+        {
+          ++input_cursor;
+        }
+        while (input_cursor < len && isspace(input_buffer[input_cursor]))
+        {
+          ++input_cursor;
+        }
+      }
+      else if (input_cursor < input_buffer.length())
       {
         ++input_cursor;
       }
