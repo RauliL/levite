@@ -23,10 +23,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <chrono>
+
 #include "./input.hpp"
 #include "./screen.hpp"
 #include "./termbox2.h"
 #include "./utils.hpp"
+
+static constexpr int DOUBLE_CLICK_MS = 400;
+static std::chrono::steady_clock::time_point last_click_time;
+static coordinates last_click_cursor = { -1, -1 };
 
 mode current_mode = mode::normal;
 std::u32string input_buffer;
@@ -294,8 +300,23 @@ handle_event(struct sheet& sheet)
         break;
 
       case TB_KEY_MOUSE_LEFT:
+      {
+        const auto now = std::chrono::steady_clock::now();
+        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+          now - last_click_time
+        ).count();
+
         click_on(event.x, event.y);
+        if (elapsed <= DOUBLE_CLICK_MS && cursor == last_click_cursor)
+        {
+          edit_current_cell(sheet);
+          last_click_cursor = { -1, -1 };
+        } else {
+          last_click_cursor = cursor;
+        }
+        last_click_time = now;
         break;
+      }
 
       default:
         break;
