@@ -38,6 +38,44 @@ mode current_mode = mode::normal;
 std::u32string input_buffer;
 std::u32string::size_type input_cursor;
 
+std::optional<std::u32string> complete_command(const std::u32string&);
+std::optional<std::u32string> complete_setting(const std::u32string&);
+
+static void
+do_tab_completion()
+{
+  const auto length = input_buffer.length();
+  const auto index = input_buffer.find(U' ');
+
+  if (index != std::u32string::npos)
+  {
+    if (length > 5 && utils::starts_with(input_buffer, U":set "))
+    {
+      if (const auto completion = complete_setting(input_buffer.substr(5)))
+      {
+        input_buffer = U":set " + *completion;
+        input_cursor = input_buffer.length();
+      }
+    }
+    else if (length > 4 && utils::starts_with(input_buffer, U":se "))
+    {
+      if (const auto completion = complete_setting(input_buffer.substr(4)))
+      {
+        input_buffer = U":se " + *completion;
+        input_cursor = input_buffer.length();
+      }
+    }
+  }
+  else if (input_buffer.length() > 1 && input_buffer[0] == U':')
+  {
+    if (const auto completion = complete_command(input_buffer.substr(1)))
+    {
+      input_buffer = U':' + *completion + U' ';
+      input_cursor = input_buffer.length();
+    }
+  }
+}
+
 static void
 insert_mode(struct sheet& sheet, const tb_event& event)
 {
@@ -70,6 +108,13 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       input_cursor = 0;
       current_mode = mode::normal;
       tb_hide_cursor();
+      return;
+
+    case TB_KEY_TAB:
+      if (input_cursor >= input_buffer.length())
+      {
+        do_tab_completion();
+      }
       return;
 
     case TB_KEY_BACKSPACE:

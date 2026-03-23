@@ -155,6 +155,20 @@ static const std::unordered_map<std::u32string, command_callback> commands =
   { U"write", cmd_write },
 };
 
+std::optional<std::u32string>
+complete_command(const std::u32string& input)
+{
+  for (const auto& entry : commands)
+  {
+    if (utils::starts_with(entry.first, input))
+    {
+      return entry.first;
+    }
+  }
+
+  return std::nullopt;
+}
+
 void
 sheet::run_command(const std::u32string& input)
 {

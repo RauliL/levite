@@ -30,6 +30,7 @@
 #include "./color.hpp"
 #include "./setting.hpp"
 #include "./termbox2.h"
+#include "./utils.hpp"
 
 namespace setting
 {
@@ -147,4 +148,18 @@ namespace setting
 
     return U"Unrecognized variable.";
   }
+}
+
+std::optional<std::u32string>
+complete_setting(const std::u32string& input)
+{
+  for (const auto& entry : setting::name_mapping)
+  {
+    if (utils::starts_with(entry.first, input))
+    {
+      return entry.first;
+    }
+  }
+
+  return std::nullopt;
 }

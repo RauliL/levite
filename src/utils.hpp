@@ -42,6 +42,13 @@ namespace utils
     );
   }
 
+  inline bool
+  starts_with(const std::u32string& str, const std::u32string& prefix)
+  {
+    return str.length() >= prefix.length()
+      && !str.compare(0, prefix.length(), prefix);
+  }
+
   std::u32string
   trim(const std::u32string& input);
 }
