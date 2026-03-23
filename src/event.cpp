@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Rauli Laine
+ * Copyright (c) 2025-2026, Rauli Laine
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,6 +24,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <chrono>
+#include <filesystem>
+
+#include <peelo/unicode/encoding/utf8.hpp>
 
 #include "./input.hpp"
 #include "./screen.hpp"
@@ -40,6 +43,38 @@ std::u32string::size_type input_cursor;
 
 std::optional<std::u32string> complete_command(const std::u32string&);
 std::optional<std::u32string> complete_setting(const std::u32string&);
+
+static std::optional<std::u32string>
+complete_filename(const std::u32string& input)
+{
+  namespace fs = std::filesystem;
+  using peelo::unicode::encoding::utf8::decode;
+  using peelo::unicode::encoding::utf8::encode;
+
+  const auto path = fs::path(encode(input));
+  const auto parent = path.has_parent_path() ? path.parent_path() : fs::path(".");
+  const auto stem = path.filename().string();
+  std::error_code ec;
+
+  for (const auto& entry : fs::directory_iterator(parent, ec))
+  {
+    const auto name = entry.path().filename().string();
+
+    if (name.compare(0, stem.length(), stem) == 0)
+    {
+      auto result = entry.path().string();
+
+      if (entry.is_directory(ec))
+      {
+        result += fs::path::preferred_separator;
+      }
+
+      return decode(result);
+    }
+  }
+
+  return std::nullopt;
+}
 
 static void
 do_tab_completion()
@@ -62,6 +97,37 @@ do_tab_completion()
       if (const auto completion = complete_setting(input_buffer.substr(4)))
       {
         input_buffer = U":se " + *completion;
+        input_cursor = input_buffer.length();
+      }
+    }
+    else if (
+      length > 3 && (
+        utils::starts_with(input_buffer, U":e ") ||
+        utils::starts_with(input_buffer, U":w ")
+      )
+    )
+    {
+      const auto prefix = input_buffer.substr(0, 3);
+
+      if (const auto completion = complete_filename(input_buffer.substr(3)))
+      {
+        input_buffer = prefix + *completion;
+        input_cursor = input_buffer.length();
+      }
+    }
+    else if (length > 6 && utils::starts_with(input_buffer, U":edit "))
+    {
+      if (const auto completion = complete_filename(input_buffer.substr(6)))
+      {
+        input_buffer = U":edit " + *completion;
+        input_cursor = input_buffer.length();
+      }
+    }
+    else if (length > 7 && utils::starts_with(input_buffer, U":write "))
+    {
+      if (const auto completion = complete_filename(input_buffer.substr(7)))
+      {
+        input_buffer = U":write " + *completion;
         input_cursor = input_buffer.length();
       }
     }
