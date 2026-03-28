@@ -38,6 +38,7 @@ static int xleft;
 
 std::u32string message;
 coordinates cursor;
+std::optional<coordinates> visual_anchor;
 
 static inline int
 get_page_width()
@@ -192,6 +193,23 @@ click_on(int x, int y)
   }
 }
 
+bool
+is_in_selection(const coordinates& coords)
+{
+  if (current_mode != mode::visual || !visual_anchor)
+  {
+    return false;
+  }
+
+  const int min_x = std::min(visual_anchor->x, cursor.x);
+  const int max_x = std::max(visual_anchor->x, cursor.x);
+  const int min_y = std::min(visual_anchor->y, cursor.y);
+  const int max_y = std::max(visual_anchor->y, cursor.y);
+
+  return coords.x >= min_x && coords.x <= max_x
+      && coords.y >= min_y && coords.y <= max_y;
+}
+
 static void
 render_ui()
 {
@@ -253,6 +271,17 @@ render_status(struct sheet& sheet)
     );
     tb_set_cursor(input_cursor + name.length() + 1, height - 1);
   }
+  else if (current_mode == mode::visual)
+  {
+    tb_printf(
+      0,
+      height - 1,
+      setting::get(setting::key::cursor_foreground),
+      setting::get(setting::key::cursor_background),
+      "%s -- VISUAL --",
+      name.c_str()
+    );
+  }
   else if (cell)
   {
     tb_printf(
@@ -293,7 +322,8 @@ render_cell(
   using peelo::unicode::encoding::utf8::encode;
 
   const auto cell_width = setting::get(setting::key::cell_width);
-  const auto is_selected = cell.coordinates == cursor;
+  const auto is_cursor = cell.coordinates == cursor;
+  const auto is_selected = is_in_selection(cell.coordinates);
   auto value = cell.evaluate(context);
   std::u32string result;
 
@@ -324,19 +354,19 @@ render_cell(
     (cell_width * (cell.coordinates.x - xleft)) + 3,
     cell.coordinates.y - xtop + 1,
     setting::get(
-      is_selected
-        ? setting::key::cursor_foreground
-        : setting::key::cell_foreground
+      is_cursor   ? setting::key::cursor_foreground :
+      is_selected ? setting::key::selection_foreground :
+                    setting::key::cell_foreground
     ),
     setting::get(
-      is_selected
-        ? setting::key::cursor_background
-        : setting::key::cell_background
+      is_cursor   ? setting::key::cursor_background :
+      is_selected ? setting::key::selection_background :
+                    setting::key::cell_background
     ),
     encode(result).c_str()
   );
 
-  if (is_selected)
+  if (is_cursor)
   {
     cursor_rendered = true;
   }
@@ -358,15 +388,21 @@ render_sheet(struct sheet& sheet)
   {
     for (int x = 0; x < width && x < coordinates::MAX_X; ++x)
     {
-      if (const auto cell = sheet.get({ x + xleft, y + xtop }))
+      const coordinates coords = { x + xleft, y + xtop };
+
+      if (const auto cell = sheet.get(coords))
       {
         render_cell(*cell, sheet.context, cursor_rendered);
       } else {
+        const auto selected = is_in_selection(coords);
+
         tb_print(
           (x * cell_width) + 3,
           y + 1,
-          cell_foreground,
-          cell_background,
+          selected ? setting::get(setting::key::selection_foreground)
+                   : cell_foreground,
+          selected ? setting::get(setting::key::selection_background)
+                   : cell_background,
           std::string(cell_width, ' ').c_str()
         );
       }

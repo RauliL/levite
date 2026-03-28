@@ -412,6 +412,113 @@ normal_mode(struct sheet& sheet, const tb_event& event)
         edit_current_cell(sheet);
       }
       break;
+
+    case 'v':
+      visual_anchor = cursor;
+      current_mode = mode::visual;
+      break;
+  }
+}
+
+static void
+leave_visual_mode()
+{
+  visual_anchor.reset();
+  current_mode = mode::normal;
+}
+
+static void
+visual_mode(struct sheet& sheet, const tb_event& event)
+{
+  switch (event.key)
+  {
+    case TB_KEY_ESC:
+      leave_visual_mode();
+      return;
+
+    case TB_KEY_ARROW_DOWN:
+    case TB_KEY_MOUSE_WHEEL_DOWN:
+      move_cursor(direction::down);
+      return;
+
+    case TB_KEY_ARROW_LEFT:
+      move_cursor(direction::left);
+      return;
+
+    case TB_KEY_ARROW_RIGHT:
+      move_cursor(direction::right);
+      return;
+
+    case TB_KEY_ARROW_UP:
+    case TB_KEY_MOUSE_WHEEL_UP:
+      move_cursor(direction::up);
+      return;
+
+    case TB_KEY_CTRL_F:
+      scroll_down(tb_height() - 3);
+      return;
+
+    case TB_KEY_CTRL_B:
+      scroll_up(tb_height() - 3);
+      return;
+
+    case TB_KEY_CTRL_D:
+    case TB_KEY_PGDN:
+      scroll_down((tb_height() - 3) / 2);
+      return;
+
+    case TB_KEY_CTRL_U:
+    case TB_KEY_PGUP:
+      scroll_up((tb_height() - 3) / 2);
+      return;
+  }
+
+  switch (event.ch)
+  {
+    case 'h':
+      move_cursor(direction::left);
+      break;
+
+    case 'j':
+      move_cursor(direction::down);
+      break;
+
+    case 'k':
+      move_cursor(direction::up);
+      break;
+
+    case 'l':
+      move_cursor(direction::right);
+      break;
+
+    case 'd':
+    case 'x':
+    {
+      const int min_x = std::min(visual_anchor->x, cursor.x);
+      const int max_x = std::max(visual_anchor->x, cursor.x);
+      const int min_y = std::min(visual_anchor->y, cursor.y);
+      const int max_y = std::max(visual_anchor->y, cursor.y);
+
+      for (int y = min_y; y <= max_y; ++y)
+      {
+        for (int x = min_x; x <= max_x; ++x)
+        {
+          sheet.erase({ x, y });
+        }
+      }
+      leave_visual_mode();
+      break;
+    }
+
+    case ':':
+      input_buffer = U":";
+      input_cursor = 1;
+      current_mode = mode::command;
+      break;
+
+    case 'v':
+      leave_visual_mode();
+      break;
   }
 }
 
@@ -433,6 +540,10 @@ handle_event(struct sheet& sheet)
 
       case mode::normal:
         normal_mode(sheet, event);
+        break;
+
+      case mode::visual:
+        visual_mode(sheet, event);
         break;
     }
   }
