@@ -29,6 +29,7 @@
 #include <peelo/unicode/encoding/utf8.hpp>
 
 #include "./input.hpp"
+#include "./registry.hpp"
 #include "./screen.hpp"
 #include "./termbox2.h"
 #include "./utils.hpp"
@@ -40,6 +41,8 @@ static coordinates last_click_cursor = { -1, -1 };
 mode current_mode = mode::normal;
 std::u32string input_buffer;
 std::u32string::size_type input_cursor;
+static bool awaiting_register_name;
+static std::optional<char32_t> pending_register;
 
 std::optional<std::u32string> complete_command(const std::u32string&);
 std::optional<std::u32string> complete_setting(const std::u32string&);
@@ -358,8 +361,49 @@ normal_mode(struct sheet& sheet, const tb_event& event)
       break;
   }
 
+  if (awaiting_register_name && event.ch != 0)
+  {
+    awaiting_register_name = false;
+    if (registry::is_valid_name(event.ch))
+    {
+      pending_register = event.ch;
+    }
+    return;
+  }
+
+  if (pending_register && event.ch != 0)
+  {
+    const auto reg = pending_register.value();
+
+    pending_register.reset();
+    switch (event.ch)
+    {
+      case 'y':
+        registry::yank_cell(sheet, reg, cursor);
+        message = U"Cell yanked.";
+        break;
+
+      case 'p':
+        if (registry::paste(sheet, reg, cursor))
+        {
+          message = U"Pasted.";
+        } else {
+          message = U"Register empty.";
+        }
+        break;
+
+      default:
+        break;
+    }
+    return;
+  }
+
   switch (event.ch)
   {
+    case '"':
+      awaiting_register_name = true;
+      break;
+
     // Enter into command mode.
     case ':':
       input_buffer.clear();
@@ -417,6 +461,20 @@ normal_mode(struct sheet& sheet, const tb_event& event)
       visual_anchor = cursor;
       current_mode = mode::visual;
       break;
+
+    case 'y':
+      registry::yank_cell(sheet, registry::UNNAMED, cursor);
+      message = U"Cell yanked.";
+      break;
+
+    case 'p':
+      if (registry::paste(sheet, registry::UNNAMED, cursor))
+      {
+        message = U"Pasted.";
+      } else {
+        message = U"Register empty.";
+      }
+      break;
   }
 }
 
@@ -473,52 +531,92 @@ visual_mode(struct sheet& sheet, const tb_event& event)
       return;
   }
 
-  switch (event.ch)
+  if (awaiting_register_name && event.ch != 0)
   {
-    case 'h':
-      move_cursor(direction::left);
-      break;
-
-    case 'j':
-      move_cursor(direction::down);
-      break;
-
-    case 'k':
-      move_cursor(direction::up);
-      break;
-
-    case 'l':
-      move_cursor(direction::right);
-      break;
-
-    case 'd':
-    case 'x':
+    awaiting_register_name = false;
+    if (registry::is_valid_name(event.ch))
     {
-      const int min_x = std::min(visual_anchor->x, cursor.x);
-      const int max_x = std::max(visual_anchor->x, cursor.x);
-      const int min_y = std::min(visual_anchor->y, cursor.y);
-      const int max_y = std::max(visual_anchor->y, cursor.y);
-
-      for (int y = min_y; y <= max_y; ++y)
-      {
-        for (int x = min_x; x <= max_x; ++x)
-        {
-          sheet.erase({ x, y });
-        }
-      }
-      leave_visual_mode();
-      break;
+      pending_register = event.ch;
     }
+    return;
+  }
 
-    case ':':
-      input_buffer = U":";
-      input_cursor = 1;
-      current_mode = mode::command;
-      break;
+  {
+    const auto reg = pending_register.value_or(registry::UNNAMED);
 
-    case 'v':
-      leave_visual_mode();
-      break;
+    pending_register.reset();
+
+    switch (event.ch)
+    {
+      case '"':
+        awaiting_register_name = true;
+        return;
+
+      case 'h':
+        move_cursor(direction::left);
+        return;
+
+      case 'j':
+        move_cursor(direction::down);
+        return;
+
+      case 'k':
+        move_cursor(direction::up);
+        return;
+
+      case 'l':
+        move_cursor(direction::right);
+        return;
+
+      case 'y':
+      {
+        registry::yank_range(sheet, reg, *visual_anchor, cursor);
+        message = U"Selection yanked.";
+        leave_visual_mode();
+        return;
+      }
+
+      case 'd':
+      case 'x':
+      {
+        registry::yank_range(sheet, reg, *visual_anchor, cursor);
+
+        const int min_x = std::min(visual_anchor->x, cursor.x);
+        const int max_x = std::max(visual_anchor->x, cursor.x);
+        const int min_y = std::min(visual_anchor->y, cursor.y);
+        const int max_y = std::max(visual_anchor->y, cursor.y);
+
+        for (int y = min_y; y <= max_y; ++y)
+        {
+          for (int x = min_x; x <= max_x; ++x)
+          {
+            sheet.erase({ x, y });
+          }
+        }
+        leave_visual_mode();
+        return;
+      }
+
+      case 'p':
+        if (registry::paste(sheet, reg, cursor))
+        {
+          message = U"Pasted.";
+        } else {
+          message = U"Register empty.";
+        }
+        leave_visual_mode();
+        return;
+
+      case ':':
+        input_buffer = U":";
+        input_cursor = 1;
+        current_mode = mode::command;
+        return;
+
+      case 'v':
+        leave_visual_mode();
+        return;
+    }
   }
 }
 
