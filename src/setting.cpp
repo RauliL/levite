@@ -55,6 +55,8 @@ namespace setting
     { key::cursor_background, { type::color, TB_GREEN | TB_BRIGHT } },
     { key::cursor_foreground, { type::color, TB_BLACK } },
     { key::foreground, { type::color, TB_BLACK } },
+    { key::selection_background, { type::color, TB_GREEN } },
+    { key::selection_foreground, { type::color, TB_BLACK } },
     { key::status_background, { type::color, TB_DEFAULT } },
     { key::status_foreground, { type::color, TB_DEFAULT } },
   };
@@ -68,6 +70,8 @@ namespace setting
     { U"cursor-background", key::cursor_background },
     { U"cursor-foreground", key::cursor_foreground },
     { U"foreground", key::foreground },
+    { U"selection-background", key::selection_background },
+    { U"selection-foreground", key::selection_foreground },
     { U"status-background", key::status_background },
     { U"status-foreground", key::status_foreground },
   };

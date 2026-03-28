@@ -29,6 +29,7 @@
 
 extern std::u32string message;
 extern coordinates cursor;
+extern std::optional<coordinates> visual_anchor;
 
 enum class direction
 {
@@ -43,3 +44,4 @@ bool scroll_up(int count);
 bool scroll_down(int count);
 bool move_cursor(enum direction direction);
 void click_on(int x, int y);
+bool is_in_selection(const coordinates& coords);

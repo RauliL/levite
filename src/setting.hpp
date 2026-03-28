@@ -39,6 +39,8 @@ namespace setting
     cursor_background,
     cursor_foreground,
     foreground,
+    selection_background,
+    selection_foreground,
     status_background,
     status_foreground,
   };

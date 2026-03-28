@@ -32,6 +32,7 @@ enum class mode
   command,
   insert,
   normal,
+  visual,
 };
 
 extern mode current_mode;
