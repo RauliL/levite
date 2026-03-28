@@ -35,6 +35,7 @@ add_executable(
   ./src/event.cpp
   ./src/main.cpp
   ./src/range.cpp
+  ./src/registry.cpp
   ./src/setting.cpp
   ./src/screen.cpp
   ./src/sheet.cpp
