@@ -2840,7 +2840,7 @@ const char *tb_strerror(int err) {
         case TB_ERR_RESIZE_POLL:
         case TB_ERR_RESIZE_READ:
         default:
-            strerror_r(global.last_errno, global.errbuf, sizeof(global.errbuf));
+            if (strerror_r(global.last_errno, global.errbuf, sizeof(global.errbuf)));
             return (const char *)global.errbuf;
     }
 }
@@ -3492,7 +3492,7 @@ static int wait_event(struct tb_event *event, int timeout) {
 
         if (resize_has_events) {
             int ignore = 0;
-            read(global.resize_pipefd[0], &ignore, sizeof(ignore));
+            if (read(global.resize_pipefd[0], &ignore, sizeof(ignore)));
             // TODO: Harden against errors encountered mid-resize
             if_err_return(rv, update_term_size());
             if_err_return(rv, resize_cellbufs());
@@ -3774,7 +3774,7 @@ static int resize_cellbufs(void) {
 
 static void handle_resize(int sig) {
     int errno_copy = errno;
-    write(global.resize_pipefd[1], &sig, sizeof(sig));
+    if (write(global.resize_pipefd[1], &sig, sizeof(sig)));
     errno = errno_copy;
 }
 
