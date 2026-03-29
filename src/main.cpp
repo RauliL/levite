@@ -136,10 +136,9 @@ parse_args(struct sheet& sheet, int argc, char** argv)
   }
 }
 
-static bool
+static void
 run_init(struct sheet& sheet)
 {
-  using peelo::unicode::encoding::utf8::decode;
   using peelo::unicode::encoding::utf8::encode;
 
   if (const auto config_dir_path = peelo::xdg::config_dir())
@@ -148,40 +147,21 @@ run_init(struct sheet& sheet)
 
     if (std::filesystem::exists(init_path))
     {
-      std::ifstream file(init_path);
-      std::string line;
-      unsigned int counter = 0;
-      bool good = true;
+      const auto messages = sheet.run_script(init_path);
 
-      if (!file.good())
+      if (!messages.empty())
       {
-        std::cerr << "Unable to read `init.levite'." << std::endl;
+        std::string dummy;
 
-        return false;
-      }
-      while (std::getline(file, line))
-      {
-        ++counter;
-        sheet.run_command(decode(line));
-        if (!message.empty())
+        for (const auto& message : messages)
         {
-          std::cerr
-            << "init.levite:"
-            << counter
-            << ": "
-            << encode(message)
-            << std::endl;
-          message.clear();
-          good = false;
+          std::cerr << encode(message) << std::endl;
         }
+        std::cerr << "Press ENTER to continue." << std::endl;
+        std::getline(std::cin, dummy);
       }
-      file.close();
-
-      return good;
     }
   }
-
-  return true;
 }
 
 int
@@ -201,13 +181,7 @@ main(int argc, char** argv)
       return EXIT_FAILURE;
     }
   }
-  if (!run_init(sheet))
-  {
-    std::string dummy;
-
-    std::cerr << "Press ENTER to continue." << std::endl;
-    std::getline(std::cin, dummy);
-  }
+  run_init(sheet);
   tb_init();
   tb_set_input_mode(TB_INPUT_ESC | TB_INPUT_MOUSE);
   tb_hide_cursor();

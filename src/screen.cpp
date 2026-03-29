@@ -432,3 +432,52 @@ render(struct sheet& sheet)
 
   tb_present();
 }
+
+void
+display_messages(const std::vector<std::u32string>& messages)
+{
+  using peelo::unicode::encoding::utf8::encode;
+
+  const auto fg = setting::get(setting::key::foreground);
+  const auto bg = setting::get(setting::key::background);
+  const auto height = tb_height();
+  const auto width = tb_width();
+
+  tb_clear();
+
+  int y = 0;
+  for (std::size_t i = 0; i < messages.size() && y < height - 1; ++i, ++y)
+  {
+    tb_print(0, y, fg, bg, encode(messages[i]).c_str());
+  }
+
+  tb_print(
+    0,
+    height - 1,
+    setting::get(setting::key::status_foreground),
+    setting::get(setting::key::status_background),
+    std::string(width, ' ').c_str()
+  );
+  tb_print(
+    0,
+    height - 1,
+    setting::get(setting::key::status_foreground),
+    setting::get(setting::key::status_background),
+    "Press ENTER or type command to continue"
+  );
+
+  tb_present();
+
+  tb_event event;
+
+  for (;;)
+  {
+    tb_poll_event(&event);
+    if (event.type == TB_EVENT_KEY &&
+        (event.key == TB_KEY_ENTER || event.key == TB_KEY_ESC ||
+         event.ch == ':'))
+    {
+      break;
+    }
+  }
+}

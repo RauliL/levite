@@ -87,4 +87,7 @@ struct sheet
 
   void
   run_command(const std::u32string& input);
+
+  std::vector<std::u32string>
+  run_script(const std::filesystem::path& path);
 };

@@ -25,6 +25,8 @@
  */
 #pragma once
 
+#include <vector>
+
 #include "./sheet.hpp"
 
 extern std::u32string message;
@@ -45,3 +47,4 @@ bool scroll_down(int count);
 bool move_cursor(enum direction direction);
 void click_on(int x, int y);
 bool is_in_selection(const coordinates& coords);
+void display_messages(const std::vector<std::u32string>& messages);

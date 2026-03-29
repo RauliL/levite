@@ -79,59 +79,46 @@ complete_filename(const std::u32string& input)
   return std::nullopt;
 }
 
+using completion_function = std::function<
+  std::optional<std::u32string>(const std::u32string&)
+>;
+
+static const std::unordered_map<std::u32string, completion_function>
+completion_mapping =
+{
+  { U":e ", complete_filename },
+  { U":edit ", complete_filename },
+  { U":set ", complete_setting },
+  { U":se ", complete_setting },
+  { U":so ", complete_filename },
+  { U":source ", complete_filename },
+  { U":w ", complete_filename },
+  { U":write ", complete_filename },
+};
+
 static void
 do_tab_completion()
 {
-  const auto length = input_buffer.length();
   const auto index = input_buffer.find(U' ');
 
   if (index != std::u32string::npos)
   {
-    if (length > 5 && utils::starts_with(input_buffer, U":set "))
+    for (const auto& entry : completion_mapping)
     {
-      if (const auto completion = complete_setting(input_buffer.substr(5)))
-      {
-        input_buffer = U":set " + *completion;
-        input_cursor = input_buffer.length();
-      }
-    }
-    else if (length > 4 && utils::starts_with(input_buffer, U":se "))
-    {
-      if (const auto completion = complete_setting(input_buffer.substr(4)))
-      {
-        input_buffer = U":se " + *completion;
-        input_cursor = input_buffer.length();
-      }
-    }
-    else if (
-      length > 3 && (
-        utils::starts_with(input_buffer, U":e ") ||
-        utils::starts_with(input_buffer, U":w ")
-      )
-    )
-    {
-      const auto prefix = input_buffer.substr(0, 3);
+      const auto& command = entry.first;
 
-      if (const auto completion = complete_filename(input_buffer.substr(3)))
+      if (utils::starts_with(input_buffer, command))
       {
-        input_buffer = prefix + *completion;
-        input_cursor = input_buffer.length();
-      }
-    }
-    else if (length > 6 && utils::starts_with(input_buffer, U":edit "))
-    {
-      if (const auto completion = complete_filename(input_buffer.substr(6)))
-      {
-        input_buffer = U":edit " + *completion;
-        input_cursor = input_buffer.length();
-      }
-    }
-    else if (length > 7 && utils::starts_with(input_buffer, U":write "))
-    {
-      if (const auto completion = complete_filename(input_buffer.substr(7)))
-      {
-        input_buffer = U":write " + *completion;
-        input_cursor = input_buffer.length();
+        const auto completion = entry.second(
+          input_buffer.substr(command.length())
+        );
+
+        if (completion)
+        {
+          input_buffer = entry.first + *completion;
+          input_cursor = input_buffer.length();
+          return;
+        }
       }
     }
   }

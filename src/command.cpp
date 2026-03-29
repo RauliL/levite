@@ -23,6 +23,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <fstream>
+
 #include <peelo/unicode/encoding/utf8.hpp>
 
 #include "./screen.hpp"
@@ -116,6 +118,30 @@ cmd_set(
 }
 
 static void
+cmd_source(
+  struct sheet* sheet,
+  const std::u32string&,
+  const std::optional<std::u32string>& arg
+)
+{
+  if (arg)
+  {
+    const auto messages = sheet->run_script(*arg);
+
+    if (messages.size() == 1)
+    {
+      message = messages[0];
+    }
+    else if (messages.size() > 1)
+    {
+      display_messages(messages);
+    }
+  } else {
+    message = U"Missing filename.";
+  }
+}
+
+static void
 cmd_write(
   sheet* sheet,
   const std::u32string&,
@@ -151,6 +177,8 @@ static const std::unordered_map<std::u32string, command_callback> commands =
   { U"quit!", cmd_quit },
   { U"se", cmd_set },
   { U"set", cmd_set },
+  { U"so", cmd_source },
+  { U"source", cmd_source },
   { U"w", cmd_write },
   { U"write", cmd_write },
 };
@@ -213,4 +241,41 @@ sheet::run_command(const std::u32string& input)
   }
 
   message = U"Unknown command: " + command;
+}
+
+std::vector<std::u32string>
+sheet::run_script(const std::filesystem::path& path)
+{
+  using peelo::unicode::encoding::utf8::decode;
+  using peelo::unicode::encoding::utf8::encode;
+
+  std::vector<std::u32string> result;
+  std::ifstream input(path);
+  std::string line;
+  unsigned int line_counter = 0;
+
+  if (input.good())
+  {
+    while (std::getline(input, line))
+    {
+      ++line_counter;
+      run_command(decode(line));
+      if (!utils::is_blank(message))
+      {
+        result.push_back(
+          path.generic_u32string() +
+          U':' +
+          decode(std::to_string(line_counter)) +
+          U": "
+          + message
+        );
+        message.clear();
+      }
+    }
+    input.close();
+  } else {
+    result.push_back(U"Unable to open `" + path.generic_u32string() + U"'.");
+  }
+
+  return result;
 }
