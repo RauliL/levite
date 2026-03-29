@@ -44,6 +44,10 @@ std::u32string::size_type input_cursor;
 static bool awaiting_register_name;
 static std::optional<char32_t> pending_register;
 
+static std::vector<std::u32string> command_history;
+static int history_index = -1;
+static std::u32string saved_input;
+
 std::optional<std::u32string> complete_command(const std::u32string&);
 std::optional<std::u32string> complete_setting(const std::u32string&);
 
@@ -142,6 +146,7 @@ insert_mode(struct sheet& sheet, const tb_event& event)
     case TB_KEY_ESC:
       input_buffer.clear();
       input_cursor = 0;
+      history_index = -1;
       current_mode = mode::normal;
       tb_hide_cursor();
       return;
@@ -158,10 +163,17 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       }
       else if (!utils::is_blank(input_buffer) && input_buffer[0] == ':')
       {
+        auto cmd = input_buffer.substr(1);
+        if (!utils::is_blank(cmd) &&
+            (command_history.empty() || command_history.back() != cmd))
+        {
+          command_history.push_back(cmd);
+        }
         sheet.run_command(input_buffer);
       }
       input_buffer.clear();
       input_cursor = 0;
+      history_index = -1;
       current_mode = mode::normal;
       tb_hide_cursor();
       return;
@@ -185,6 +197,36 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       if (input_cursor < input_buffer.length())
       {
         input_buffer.erase(input_cursor, 1);
+      }
+      return;
+
+    case TB_KEY_ARROW_UP:
+      if (current_mode == mode::command && !command_history.empty())
+      {
+        if (history_index < 0)
+        {
+          saved_input = input_buffer;
+        }
+        if (history_index < static_cast<int>(command_history.size()) - 1)
+        {
+          ++history_index;
+          input_buffer = U":" + command_history[command_history.size() - 1 - history_index];
+          input_cursor = input_buffer.length();
+        }
+      }
+      return;
+
+    case TB_KEY_ARROW_DOWN:
+      if (current_mode == mode::command && history_index >= 0)
+      {
+        --history_index;
+        if (history_index < 0)
+        {
+          input_buffer = saved_input;
+        } else {
+          input_buffer = U":" + command_history[command_history.size() - 1 - history_index];
+        }
+        input_cursor = input_buffer.length();
       }
       return;
 
