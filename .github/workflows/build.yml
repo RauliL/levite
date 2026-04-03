@@ -1,0 +1,33 @@
+name: build
+
+on: [push]
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Install MPFR
+        run: sudo apt install -y libmpfr6 libmpfr-dev
+      - name: Build
+        uses: ashutoshvarma/action-cmake-build@master
+        with:
+          build-dir: ${{ runner.workspace }}/build
+          build-type: Release
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Install MPFR
+        run: brew install mpfr
+      - name: Export homebrew paths
+        uses: spezifisch/export-homebrew-build-paths@v1.0.0
+      - name: Build
+        uses: ashutoshvarma/action-cmake-build@master
+        with:
+          build-dir: ${{ runner.workspace }}/build
+          build-type: Release
+          configure-options: -DCMAKE_POLICY_VERSION_MINIMUM=3.5
