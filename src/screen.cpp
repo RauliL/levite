@@ -45,7 +45,7 @@ get_page_width()
 {
   return std::floor(
     (static_cast<double>(tb_width() - 3)) /
-      setting::get(setting::key::cell_width)
+      setting::get_int(setting::key::cell_width)
   );
 }
 
@@ -161,7 +161,7 @@ move_cursor(enum direction direction)
 void
 click_on(int x, int y)
 {
-  const auto cell_width = setting::get(setting::key::cell_width);
+  const auto cell_width = setting::get_int(setting::key::cell_width);
   const auto page_width = get_page_width();
   const auto page_height = get_page_height();
 
@@ -213,9 +213,9 @@ is_in_selection(const coordinates& coords)
 static void
 render_ui()
 {
-  const auto cell_width = setting::get(setting::key::cell_width);
-  const auto foreground = setting::get(setting::key::foreground);
-  const auto background = setting::get(setting::key::background);
+  const auto cell_width = setting::get_int(setting::key::cell_width);
+  const auto foreground = setting::get_int(setting::key::foreground);
+  const auto background = setting::get_int(setting::key::background);
   const auto width = tb_width();
   const auto height = tb_height();
   const auto display_columns = (width - 3) / cell_width;
@@ -263,8 +263,8 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      setting::get(setting::key::cursor_foreground),
-      setting::get(setting::key::cursor_background),
+      setting::get_int(setting::key::cursor_foreground),
+      setting::get_int(setting::key::cursor_background),
       "%s %s",
       name.c_str(),
       encode(input_buffer).c_str()
@@ -276,8 +276,8 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      setting::get(setting::key::cursor_foreground),
-      setting::get(setting::key::cursor_background),
+      setting::get_int(setting::key::cursor_foreground),
+      setting::get_int(setting::key::cursor_background),
       "%s -- VISUAL --",
       name.c_str()
     );
@@ -287,8 +287,8 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      setting::get(setting::key::foreground),
-      setting::get(setting::key::background),
+      setting::get_int(setting::key::foreground),
+      setting::get_int(setting::key::background),
       "%s %s",
       name.c_str(),
       encode(cell->get_source()).c_str()
@@ -297,8 +297,8 @@ render_status(struct sheet& sheet)
     tb_printf(
       0,
       height - 1,
-      setting::get(setting::key::foreground),
-      setting::get(setting::key::background),
+      setting::get_int(setting::key::foreground),
+      setting::get_int(setting::key::background),
       "%s",
       name.c_str()
     );
@@ -306,8 +306,8 @@ render_status(struct sheet& sheet)
   tb_printf(
     0,
     height - 2,
-    setting::get(setting::key::status_foreground),
-    setting::get(setting::key::status_background),
+    setting::get_int(setting::key::status_foreground),
+    setting::get_int(setting::key::status_background),
     (cell && cell->error ? *cell->error : encode(message)).c_str()
   );
 }
@@ -321,7 +321,7 @@ render_cell(
 {
   using peelo::unicode::encoding::utf8::encode;
 
-  const auto cell_width = setting::get(setting::key::cell_width);
+  const auto cell_width = setting::get_int(setting::key::cell_width);
   const auto is_cursor = cell.coordinates == cursor;
   const auto is_selected = is_in_selection(cell.coordinates);
   auto value = cell.evaluate(context);
@@ -353,12 +353,12 @@ render_cell(
   tb_print(
     (cell_width * (cell.coordinates.x - xleft)) + 3,
     cell.coordinates.y - xtop + 1,
-    setting::get(
+    setting::get_int(
       is_cursor   ? setting::key::cursor_foreground :
       is_selected ? setting::key::selection_foreground :
                     setting::key::cell_foreground
     ),
-    setting::get(
+    setting::get_int(
       is_cursor   ? setting::key::cursor_background :
       is_selected ? setting::key::selection_background :
                     setting::key::cell_background
@@ -375,9 +375,9 @@ render_cell(
 static void
 render_sheet(struct sheet& sheet)
 {
-  const auto cell_width = setting::get(setting::key::cell_width);
-  const auto cell_foreground = setting::get(setting::key::cell_foreground);
-  const auto cell_background = setting::get(setting::key::cell_background);
+  const auto cell_width = setting::get_int(setting::key::cell_width);
+  const auto cell_foreground = setting::get_int(setting::key::cell_foreground);
+  const auto cell_background = setting::get_int(setting::key::cell_background);
   const auto height = get_page_height();
   const auto width = get_page_width();
   bool cursor_rendered = false;
@@ -399,10 +399,12 @@ render_sheet(struct sheet& sheet)
         tb_print(
           (x * cell_width) + 3,
           y + 1,
-          selected ? setting::get(setting::key::selection_foreground)
-                   : cell_foreground,
-          selected ? setting::get(setting::key::selection_background)
-                   : cell_background,
+          selected
+            ? setting::get_int(setting::key::selection_foreground)
+            : cell_foreground,
+          selected
+            ? setting::get_int(setting::key::selection_background)
+            : cell_background,
           std::string(cell_width, ' ').c_str()
         );
       }
@@ -414,8 +416,8 @@ render_sheet(struct sheet& sheet)
     tb_print(
       (cell_width * (cursor.x - xleft)) + 3,
       cursor.y - xtop + 1,
-      setting::get(setting::key::cursor_foreground),
-      setting::get(setting::key::cursor_background),
+      setting::get_int(setting::key::cursor_foreground),
+      setting::get_int(setting::key::cursor_background),
       std::string(cell_width, ' ').c_str()
     );
   }
@@ -438,14 +440,15 @@ display_messages(const std::vector<std::u32string>& messages)
 {
   using peelo::unicode::encoding::utf8::encode;
 
-  const auto fg = setting::get(setting::key::foreground);
-  const auto bg = setting::get(setting::key::background);
+  const auto fg = setting::get_int(setting::key::foreground);
+  const auto bg = setting::get_int(setting::key::background);
   const auto height = tb_height();
   const auto width = tb_width();
+  int y = 0;
+  tb_event event;
 
   tb_clear();
 
-  int y = 0;
   for (std::size_t i = 0; i < messages.size() && y < height - 1; ++i, ++y)
   {
     tb_print(0, y, fg, bg, encode(messages[i]).c_str());
@@ -454,28 +457,31 @@ display_messages(const std::vector<std::u32string>& messages)
   tb_print(
     0,
     height - 1,
-    setting::get(setting::key::status_foreground),
-    setting::get(setting::key::status_background),
+    setting::get_int(setting::key::status_foreground),
+    setting::get_int(setting::key::status_background),
     std::string(width, ' ').c_str()
   );
   tb_print(
     0,
     height - 1,
-    setting::get(setting::key::status_foreground),
-    setting::get(setting::key::status_background),
+    setting::get_int(setting::key::status_foreground),
+    setting::get_int(setting::key::status_background),
     "Press ENTER or type command to continue"
   );
 
   tb_present();
 
-  tb_event event;
 
   for (;;)
   {
     tb_poll_event(&event);
-    if (event.type == TB_EVENT_KEY &&
-        (event.key == TB_KEY_ENTER || event.key == TB_KEY_ESC ||
-         event.ch == ':'))
+    if (
+      event.type == TB_EVENT_KEY && (
+        event.key == TB_KEY_ENTER ||
+        event.key == TB_KEY_ESC ||
+        event.ch == ':'
+      )
+    )
     {
       break;
     }

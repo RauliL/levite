@@ -46,7 +46,7 @@ namespace setting
   };
 
   int
-  get(enum key key);
+  get_int(enum key key);
 
   std::u32string
   get_for_display(const std::u32string& name);

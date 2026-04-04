@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <unordered_map>
+#include <variant>
 
 #include <peelo/unicode/encoding/utf8.hpp>
 
@@ -38,12 +39,13 @@ namespace setting
   {
     color,
     number,
+    string,
   };
 
   struct variable
   {
     enum type type;
-    int value;
+    std::variant<int, std::u32string> value;
   };
 
   static std::unordered_map<key, variable> mapping =
@@ -90,9 +92,9 @@ namespace setting
   }
 
   int
-  get(enum key key)
+  get_int(enum key key)
   {
-    return mapping[key].value;
+    return std::get<int>(mapping[key].value);
   }
 
   std::u32string
@@ -104,12 +106,16 @@ namespace setting
     {
       const auto& variable = mapping[*key];
 
-      if (variable.type == type::color)
+      if (variable.type == type::string)
       {
-        return color::get_name(variable.value);
+        return std::get<std::u32string>(variable.value);
+      }
+      else if (variable.type == type::color)
+      {
+        return color::get_name(std::get<int>(variable.value));
       }
 
-      return decode(std::to_string(variable.value));
+      return decode(std::to_string(std::get<int>(variable.value)));
     }
 
     return U"Unrecognized variable.";
@@ -124,7 +130,13 @@ namespace setting
     {
       auto& variable = mapping[*key];
 
-      if (variable.type == type::color)
+      if (variable.type == type::string)
+      {
+        variable.value = value;
+
+        return std::nullopt;
+      }
+      else if (variable.type == type::color)
       {
         if (const auto color = color::find_by_name(value))
         {
