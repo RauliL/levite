@@ -46,6 +46,66 @@ namespace setting
   {
     enum type type;
     std::variant<int, std::u32string> value;
+
+    std::u32string
+    get_for_display() const
+    {
+      using peelo::unicode::encoding::utf8::decode;
+
+      switch (type)
+      {
+        case type::color:
+          return color::get_name(std::get<int>(value));
+
+        case type::number:
+          return decode(std::to_string(std::get<int>(value)));
+
+        case type::string:
+          return std::get<std::u32string>(value);
+      }
+
+      return U""; // Just to keep the compiler happy.
+    }
+
+    bool
+    set(const std::u32string& new_value)
+    {
+      using peelo::unicode::encoding::utf8::encode;
+
+      switch (type)
+      {
+        case type::color:
+          if (const auto color = color::find_by_name(new_value))
+          {
+            value = *color;
+
+            return true;
+          }
+          break;
+
+        case type::number:
+          try
+          {
+            const auto number = std::stoi(encode(new_value));
+
+            if (number > 0)
+            {
+              value = number;
+
+              return true;
+            }
+          }
+          catch (const std::exception&) {}
+          break;
+
+        case type::string:
+          value = new_value;
+
+          return true;
+      }
+
+      return false;
+    }
   };
 
   static std::unordered_map<key, variable> mapping =
@@ -104,18 +164,7 @@ namespace setting
 
     if (const auto key = find_by_name(name))
     {
-      const auto& variable = mapping[*key];
-
-      if (variable.type == type::string)
-      {
-        return std::get<std::u32string>(variable.value);
-      }
-      else if (variable.type == type::color)
-      {
-        return color::get_name(std::get<int>(variable.value));
-      }
-
-      return decode(std::to_string(std::get<int>(variable.value)));
+      return mapping[*key].get_for_display();
     }
 
     return U"Unrecognized variable.";
@@ -128,41 +177,15 @@ namespace setting
 
     if (const auto key = find_by_name(name))
     {
-      auto& variable = mapping[*key];
-
-      if (variable.type == type::string)
+      if (mapping[*key].set(value))
       {
-        variable.value = value;
-
         return std::nullopt;
-      }
-      else if (variable.type == type::color)
-      {
-        if (const auto color = color::find_by_name(value))
-        {
-          variable.value = *color;
-
-          return std::nullopt;
-        }
-      } else {
-        try
-        {
-          const auto number = std::stoi(encode(value));
-
-          if (number > 0)
-          {
-            variable.value = number;
-
-            return std::nullopt;
-          }
-        }
-        catch (const std::exception&) {};
       }
 
       return U"Invalid value.";
     }
 
-    return U"Unrecognized variable.";
+    return U"Unrecognized variable: " + name;
   }
 }
 
