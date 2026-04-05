@@ -34,18 +34,16 @@ cell::evaluate(laskin::context& context) const
 {
   if (is_formula())
   {
-    std::stringstream out;
-
     try
     {
       context.clear();
-      laskin::quote::parse(value.as_string().substr(1)).call(context, out);
+      laskin::quote::parse(value.as_string().substr(1)).call(context);
 
       return context.pop();
     }
     catch (const laskin::error& e)
     {
-      error = e.message();
+      error = e.message;
 
       return laskin::value::make_string(U"#ERROR");
     }

@@ -25,7 +25,6 @@
  */
 #include <laskin/chrono.hpp>
 #include <laskin/error.hpp>
-#include <laskin/number.hpp>
 #include <peelo/unicode/encoding/utf8.hpp>
 #include <rapidcsv.h>
 
@@ -65,7 +64,7 @@ sheet::sheet()
 void
 sheet::set(const coordinates& coords, const std::u32string& input)
 {
-  if (laskin::is_number(input))
+  if (peelo::number::is_valid(input))
   {
     set(coords, laskin::value::make_number(input));
   }
