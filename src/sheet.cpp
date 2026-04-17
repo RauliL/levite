@@ -43,7 +43,7 @@ sheet::sheet()
       {
         if (const auto values = range->extract(*this))
         {
-          return laskin::value::make_vector(*values);
+          return *values;
         }
       }
       else if (const auto coords = coordinates::parse(name))
@@ -66,33 +66,33 @@ sheet::set(const coordinates& coords, const std::u32string& input)
 {
   if (peelo::number::is_valid(input))
   {
-    set(coords, laskin::value::make_number(input));
+    set(coords, laskin::value::parse_number(input));
   }
   else if (laskin::is_date(input))
   {
-    set(coords, laskin::value::make_date(input));
+    set(coords, laskin::parse_date(input));
   }
   else if (laskin::is_time(input))
   {
-    set(coords, laskin::value::make_time(input));
+    set(coords, laskin::parse_time(input));
   }
   else if (laskin::is_month(input))
   {
-    set(coords, laskin::value::make_month(input));
+    set(coords, laskin::parse_month(input));
   }
   else if (laskin::is_weekday(input))
   {
-    set(coords, laskin::value::make_weekday(input));
+    set(coords, laskin::parse_weekday(input));
   }
   else if (!input.compare(U"true"))
   {
-    set(coords, laskin::value::make_boolean(true));
+    set(coords, true);
   }
   else if (!input.compare(U"false"))
   {
-    set(coords, laskin::value::make_boolean(false));
+    set(coords, false);
   } else {
-    set(coords, laskin::value::make_string(input));
+    set(coords, input);
   }
 }
 

@@ -8,7 +8,7 @@ FetchContent_Declare(
   GIT_REPOSITORY
     https://github.com/RauliL/laskin.git
   GIT_TAG
-    v5.1.1
+    v6.1.0
 )
 FetchContent_Declare(
   rapidcsv
