@@ -258,7 +258,11 @@ render_status(struct sheet& sheet)
   const auto name = encode(cursor.to_string());
   const auto cell = sheet.get(cursor);
 
-  if (current_mode == mode::insert || current_mode == mode::command)
+  if (
+    current_mode == mode::insert ||
+    current_mode == mode::command ||
+    current_mode == mode::search_forward
+  )
   {
     tb_printf(
       0,

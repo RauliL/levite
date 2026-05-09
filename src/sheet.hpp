@@ -90,4 +90,12 @@ struct sheet
 
   std::vector<std::u32string>
   run_script(const std::filesystem::path& path);
+
+  bool
+  find_literal_substring(
+    const std::u32string& needle,
+    const coordinates& cursor_pos,
+    bool forward,
+    coordinates& found
+  ) const;
 };

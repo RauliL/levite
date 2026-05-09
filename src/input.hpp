@@ -32,6 +32,7 @@ enum class mode
   command,
   insert,
   normal,
+  search_forward,
   visual,
 };
 
