@@ -29,16 +29,16 @@ user interface that [Vi] users should feel comfortable with.
 
 ## How to compile
 
-You need [CMake] and C++17 capable compiler to do this. Does not work on
-Windows yet, sorry.
+You need [CMake] and C++17 capable compiler to do this. Should happily
+compile on Linux, macOS and Windows.
 
 ```bash
-$ git clone https://github.com/RauliL/levite.git
-$ cd levite
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
+git clone https://github.com/RauliL/levite.git
+cd levite
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 [CMake]: https://www.cmake.org
