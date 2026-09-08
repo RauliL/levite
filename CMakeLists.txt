@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.14)
 project(levite C CXX)
 
 include(FetchContent)
@@ -24,6 +24,14 @@ FetchContent_Declare(
   GIT_TAG
     v1.2.0
 )
+
+# We do not want to build Laskin CLI, GUI or any other fluff than the
+# interpreter library.
+set(LASKIN_ENABLE_CLI OFF CACHE BOOL "" FORCE)
+set(LASKIN_ENABLE_GUI OFF CACHE BOOL "" FORCE)
+set(LASKIN_ENABLE_2CPP OFF CACHE BOOL "" FORCE)
+set(LASKIN_ENABLE_WEB OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(laskin rapidcsv PeeloXdg)
 
 add_executable(
