@@ -22,7 +22,7 @@ FetchContent_Declare(
   GIT_REPOSITORY
     https://github.com/peelonet/peelo-xdg
   GIT_TAG
-    v1.2.0
+    v1.2.1
 )
 FetchContent_Declare(
   libterm
