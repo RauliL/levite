@@ -15,7 +15,7 @@ FetchContent_Declare(
   GIT_REPOSITORY
     https://github.com/d99kris/rapidcsv
   GIT_TAG
-    v8.84
+    v9.07
 )
 FetchContent_Declare(
   PeeloXdg
