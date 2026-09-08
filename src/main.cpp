@@ -29,9 +29,10 @@
 #include <peelo/unicode/encoding/utf8.hpp>
 #include <peelo/xdg.hpp>
 
+#include <libterm/libterm.h>
+
 #include "./screen.hpp"
 #include "./sheet.hpp"
-#include "./termbox2.h"
 
 void handle_event(struct sheet& sheet);
 void render(struct sheet& sheet);
@@ -182,9 +183,9 @@ main(int argc, char** argv)
     }
   }
   run_init(sheet);
-  tb_init();
-  tb_set_input_mode(TB_INPUT_ESC | TB_INPUT_MOUSE);
-  tb_hide_cursor();
+  lt_init();
+  lt_set_input_mode(LT_INPUT_ESC | LT_INPUT_MOUSE | LT_INPUT_COMPAT);
+  lt_hide_cursor();
   for (;;)
   {
     render(sheet);

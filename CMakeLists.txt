@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.32)
 project(levite C CXX)
 
 include(FetchContent)
@@ -24,6 +24,13 @@ FetchContent_Declare(
   GIT_TAG
     v1.2.0
 )
+FetchContent_Declare(
+  libterm
+  GIT_REPOSITORY
+    https://github.com/rizukirr/libterm
+  GIT_TAG
+    v0.1.2
+)
 
 # We do not want to build Laskin CLI, GUI or any other fluff than the
 # interpreter library.
@@ -32,7 +39,7 @@ set(LASKIN_ENABLE_GUI OFF CACHE BOOL "" FORCE)
 set(LASKIN_ENABLE_2CPP OFF CACHE BOOL "" FORCE)
 set(LASKIN_ENABLE_WEB OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(laskin rapidcsv PeeloXdg)
+FetchContent_MakeAvailable(laskin rapidcsv PeeloXdg libterm)
 
 add_executable(
   levite
@@ -47,7 +54,6 @@ add_executable(
   ./src/setting.cpp
   ./src/screen.cpp
   ./src/sheet.cpp
-  ./src/termbox2.cpp
   ./src/utils.cpp
 )
 
@@ -69,6 +75,7 @@ target_link_libraries(
     laskin
     rapidcsv
     PeeloXdg
+    Libterm::libterm
 )
 
 install(

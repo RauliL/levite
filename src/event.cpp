@@ -28,10 +28,11 @@
 
 #include <peelo/unicode/encoding/utf8.hpp>
 
+#include <libterm/libterm.h>
+
 #include "./input.hpp"
 #include "./registry.hpp"
 #include "./screen.hpp"
-#include "./termbox2.h"
 #include "./utils.hpp"
 
 static constexpr int DOUBLE_CLICK_MS = 400;
@@ -138,21 +139,21 @@ do_tab_completion()
 }
 
 static void
-insert_mode(struct sheet& sheet, const tb_event& event)
+insert_mode(struct sheet& sheet, const lt_event& event)
 {
   using peelo::unicode::ctype::isspace;
 
   switch (event.key)
   {
-    case TB_KEY_ESC:
+    case LT_KEY_ESC:
       input_buffer.clear();
       input_cursor = 0;
       history_index = -1;
       current_mode = mode::normal;
-      tb_hide_cursor();
+      lt_hide_cursor();
       return;
 
-    case TB_KEY_ENTER:
+    case LT_KEY_ENTER:
       if (current_mode == mode::search_forward)
       {
         std::u32string pattern;
@@ -185,7 +186,7 @@ insert_mode(struct sheet& sheet, const tb_event& event)
         input_cursor = 0;
         history_index = -1;
         current_mode = mode::normal;
-        tb_hide_cursor();
+        lt_hide_cursor();
 
         return;
       }
@@ -212,32 +213,32 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       input_cursor = 0;
       history_index = -1;
       current_mode = mode::normal;
-      tb_hide_cursor();
+      lt_hide_cursor();
       return;
 
-    case TB_KEY_TAB:
+    case LT_KEY_TAB:
       if (input_cursor >= input_buffer.length())
       {
         do_tab_completion();
       }
       return;
 
-    case TB_KEY_BACKSPACE:
-    case TB_KEY_BACKSPACE2:
+    case LT_KEY_BACKSPACE:
+    case LT_KEY_BACKSPACE2:
       if (input_cursor > 0)
       {
         input_buffer.erase(--input_cursor, 1);
       }
       return;
 
-    case TB_KEY_DELETE:
+    case LT_KEY_DELETE:
       if (input_cursor < input_buffer.length())
       {
         input_buffer.erase(input_cursor, 1);
       }
       return;
 
-    case TB_KEY_ARROW_UP:
+    case LT_KEY_ARROW_UP:
       if (current_mode == mode::command && !command_history.empty())
       {
         if (history_index < 0)
@@ -253,7 +254,7 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       }
       return;
 
-    case TB_KEY_ARROW_DOWN:
+    case LT_KEY_ARROW_DOWN:
       if (current_mode == mode::command && history_index >= 0)
       {
         --history_index;
@@ -267,9 +268,9 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       }
       return;
 
-    case TB_KEY_ARROW_LEFT:
-    case TB_KEY_CTRL_B:
-      if (event.mod & TB_MOD_CTRL)
+    case LT_KEY_ARROW_LEFT:
+    case LT_KEY_CTRL_B:
+      if (event.mod & LT_MOD_CTRL)
       {
         while (input_cursor > 0 && isspace(input_buffer[input_cursor - 1]))
         {
@@ -286,9 +287,9 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       }
       return;
 
-    case TB_KEY_ARROW_RIGHT:
-    case TB_KEY_CTRL_F:
-      if ((event.mod & TB_MOD_CTRL))
+    case LT_KEY_ARROW_RIGHT:
+    case LT_KEY_CTRL_F:
+      if ((event.mod & LT_MOD_CTRL))
       {
         const auto len = input_buffer.length();
 
@@ -307,26 +308,26 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       }
       return;
 
-    case TB_KEY_HOME:
-    case TB_KEY_CTRL_A:
+    case LT_KEY_HOME:
+    case LT_KEY_CTRL_A:
       input_cursor = 0;
       return;
 
-    case TB_KEY_END:
-    case TB_KEY_CTRL_E:
+    case LT_KEY_END:
+    case LT_KEY_CTRL_E:
       input_cursor = input_buffer.length();
       return;
 
-    case TB_KEY_CTRL_U:
+    case LT_KEY_CTRL_U:
       input_buffer.clear();
       input_cursor = 0;
       return;
 
-    case TB_KEY_CTRL_K:
+    case LT_KEY_CTRL_K:
       input_buffer.erase(input_cursor);
       return;
 
-    case TB_KEY_CTRL_W:
+    case LT_KEY_CTRL_W:
       if (input_cursor != 0)
       {
         auto pos = input_cursor;
@@ -367,63 +368,63 @@ edit_current_cell(struct sheet& sheet, bool prepend = false)
 }
 
 static void
-normal_mode(struct sheet& sheet, const tb_event& event)
+normal_mode(struct sheet& sheet, const lt_event& event)
 {
   switch (event.key)
   {
-    case TB_KEY_ENTER:
-    case TB_KEY_INSERT:
+    case LT_KEY_ENTER:
+    case LT_KEY_INSERT:
       edit_current_cell(sheet);
       return;
 
-    case TB_KEY_BACKSPACE:
-    case TB_KEY_BACKSPACE2:
-    case TB_KEY_DELETE:
+    case LT_KEY_BACKSPACE:
+    case LT_KEY_BACKSPACE2:
+    case LT_KEY_DELETE:
       sheet.erase(cursor);
       return;
 
     // Move one row downwards.
-    case TB_KEY_ARROW_DOWN:
-    case TB_KEY_MOUSE_WHEEL_DOWN:
+    case LT_KEY_ARROW_DOWN:
+    case LT_KEY_MOUSE_WHEEL_DOWN:
       move_cursor(direction::down);
       return;
 
     // Move one cell to the left.
-    case TB_KEY_ARROW_LEFT:
+    case LT_KEY_ARROW_LEFT:
       move_cursor(direction::left);
       return;
 
     // Move one cell to the right.
-    case TB_KEY_ARROW_RIGHT:
+    case LT_KEY_ARROW_RIGHT:
       move_cursor(direction::right);
       return;
 
     // Move one row upwards.
-    case TB_KEY_ARROW_UP:
-    case TB_KEY_MOUSE_WHEEL_UP:
+    case LT_KEY_ARROW_UP:
+    case LT_KEY_MOUSE_WHEEL_UP:
       move_cursor(direction::up);
       return;
 
     // Move one screen towards end of the file.
-    case TB_KEY_CTRL_F:
-      scroll_down(tb_height() - 3);
+    case LT_KEY_CTRL_F:
+      scroll_down(lt_height() - 3);
       break;
 
     // Move one screen towards beginning of the file.
-    case TB_KEY_CTRL_B:
-      scroll_up(tb_height() - 3);
+    case LT_KEY_CTRL_B:
+      scroll_up(lt_height() - 3);
       break;
 
     // Move 1/2 screen towards end of the file.
-    case TB_KEY_CTRL_D:
-    case TB_KEY_PGDN:
-      scroll_down((tb_height() - 3) / 2);
+    case LT_KEY_CTRL_D:
+    case LT_KEY_PGDN:
+      scroll_down((lt_height() - 3) / 2);
       break;
 
     // Move 1/2 screen towards beginning of the file.
-    case TB_KEY_CTRL_U:
-    case TB_KEY_PGUP:
-      scroll_up((tb_height() - 3) / 2);
+    case LT_KEY_CTRL_U:
+    case LT_KEY_PGUP:
+      scroll_up((lt_height() - 3) / 2);
       break;
   }
 
@@ -601,48 +602,48 @@ leave_visual_mode()
 }
 
 static void
-visual_mode(struct sheet& sheet, const tb_event& event)
+visual_mode(struct sheet& sheet, const lt_event& event)
 {
   switch (event.key)
   {
-    case TB_KEY_ESC:
+    case LT_KEY_ESC:
       leave_visual_mode();
       return;
 
-    case TB_KEY_ARROW_DOWN:
-    case TB_KEY_MOUSE_WHEEL_DOWN:
+    case LT_KEY_ARROW_DOWN:
+    case LT_KEY_MOUSE_WHEEL_DOWN:
       move_cursor(direction::down);
       return;
 
-    case TB_KEY_ARROW_LEFT:
+    case LT_KEY_ARROW_LEFT:
       move_cursor(direction::left);
       return;
 
-    case TB_KEY_ARROW_RIGHT:
+    case LT_KEY_ARROW_RIGHT:
       move_cursor(direction::right);
       return;
 
-    case TB_KEY_ARROW_UP:
-    case TB_KEY_MOUSE_WHEEL_UP:
+    case LT_KEY_ARROW_UP:
+    case LT_KEY_MOUSE_WHEEL_UP:
       move_cursor(direction::up);
       return;
 
-    case TB_KEY_CTRL_F:
-      scroll_down(tb_height() - 3);
+    case LT_KEY_CTRL_F:
+      scroll_down(lt_height() - 3);
       return;
 
-    case TB_KEY_CTRL_B:
-      scroll_up(tb_height() - 3);
+    case LT_KEY_CTRL_B:
+      scroll_up(lt_height() - 3);
       return;
 
-    case TB_KEY_CTRL_D:
-    case TB_KEY_PGDN:
-      scroll_down((tb_height() - 3) / 2);
+    case LT_KEY_CTRL_D:
+    case LT_KEY_PGDN:
+      scroll_down((lt_height() - 3) / 2);
       return;
 
-    case TB_KEY_CTRL_U:
-    case TB_KEY_PGUP:
-      scroll_up((tb_height() - 3) / 2);
+    case LT_KEY_CTRL_U:
+    case LT_KEY_PGUP:
+      scroll_up((lt_height() - 3) / 2);
       return;
   }
 
@@ -738,11 +739,11 @@ visual_mode(struct sheet& sheet, const tb_event& event)
 void
 handle_event(struct sheet& sheet)
 {
-  tb_event event;
+  lt_event event;
 
-  tb_poll_event(&event);
+  lt_poll_event(&event);
 
-  if (event.type == TB_EVENT_KEY)
+  if (event.type == LT_EVENT_KEY)
   {
     switch (current_mode)
     {
@@ -761,7 +762,7 @@ handle_event(struct sheet& sheet)
         break;
     }
   }
-  else if (event.type == TB_EVENT_MOUSE)
+  else if (event.type == LT_EVENT_MOUSE)
   {
     if (current_mode != mode::normal)
     {
@@ -769,15 +770,15 @@ handle_event(struct sheet& sheet)
     }
     switch (event.key)
     {
-      case TB_KEY_MOUSE_WHEEL_UP:
+      case LT_KEY_MOUSE_WHEEL_UP:
         move_cursor(direction::up);
         break;
 
-      case TB_KEY_MOUSE_WHEEL_DOWN:
+      case LT_KEY_MOUSE_WHEEL_DOWN:
         move_cursor(direction::down);
         break;
 
-      case TB_KEY_MOUSE_LEFT:
+      case LT_KEY_MOUSE_LEFT:
       {
         const auto now = std::chrono::steady_clock::now();
         const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(

@@ -28,9 +28,16 @@
 #include <optional>
 #include <string>
 
+#include <libterm/libterm.h>
+
 namespace color
 {
+  /* Internal bright-color flag (termbox2's TB_BRIGHT has no libterm equivalent). */
+  constexpr int BRIGHT = 0x100;
+
   std::optional<int> find_by_name(const std::u32string& name);
 
   std::u32string get_name(int color);
+
+  lt_attr to_lt_attr(int color);
 }
