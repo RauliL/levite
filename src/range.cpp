@@ -38,7 +38,7 @@ range::parse(const std::u32string& input)
 
     if (begin && end)
     {
-      return std::make_optional<range>({ *begin, *end });
+      return range{ *begin, *end };
     }
   }
 

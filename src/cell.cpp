@@ -45,7 +45,7 @@ cell::evaluate(laskin::context& context) const
     {
       error = e.message;
 
-      return laskin::value::make_string(U"#ERROR");
+      return laskin::value(U"#ERROR");
     }
   }
 

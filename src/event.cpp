@@ -41,6 +41,7 @@ static coordinates last_click_cursor = { -1, -1 };
 mode current_mode = mode::normal;
 std::u32string input_buffer;
 std::u32string::size_type input_cursor;
+static std::u32string last_search_pattern;
 static bool awaiting_register_name;
 static std::optional<char32_t> pending_register;
 
@@ -152,6 +153,42 @@ insert_mode(struct sheet& sheet, const tb_event& event)
       return;
 
     case TB_KEY_ENTER:
+      if (current_mode == mode::search_forward)
+      {
+        std::u32string pattern;
+
+        if (input_buffer.size() > 1)
+        {
+          pattern = input_buffer.substr(1);
+        }
+        if (pattern.empty() && !last_search_pattern.empty())
+        {
+          pattern = last_search_pattern;
+        }
+
+        coordinates hit;
+
+        if (pattern.empty())
+        {
+          message = U"No pattern.";
+        }
+        else if (sheet.find_literal_substring(pattern, cursor, true, hit))
+        {
+          move_to(hit);
+          last_search_pattern = pattern;
+          message.clear();
+        } else {
+          message = U"Pattern not found.";
+        }
+
+        input_buffer.clear();
+        input_cursor = 0;
+        history_index = -1;
+        current_mode = mode::normal;
+        tb_hide_cursor();
+
+        return;
+      }
       if (current_mode == mode::insert)
       {
         if (utils::is_blank(input_buffer))
@@ -441,6 +478,55 @@ normal_mode(struct sheet& sheet, const tb_event& event)
       current_mode = mode::command;
       return;
 
+    case '/':
+      input_buffer.clear();
+      input_buffer.append(1, U'/');
+      input_cursor = 1;
+      current_mode = mode::search_forward;
+      return;
+
+    case 'n':
+    {
+      coordinates hit;
+
+      if (
+        !last_search_pattern.empty() &&
+        sheet.find_literal_substring(last_search_pattern, cursor, true, hit)
+      )
+      {
+        move_to(hit);
+        message.clear();
+      }
+      else if (last_search_pattern.empty())
+      {
+        message = U"No previous pattern.";
+      } else {
+        message = U"Pattern not found.";
+      }
+      break;
+    }
+
+    case 'N':
+    {
+      coordinates hit;
+
+      if (
+        !last_search_pattern.empty() &&
+        sheet.find_literal_substring(last_search_pattern, cursor, false, hit)
+      )
+      {
+        move_to(hit);
+        message.clear();
+      }
+      else if (last_search_pattern.empty())
+      {
+        message = U"No previous pattern.";
+      } else {
+        message = U"Pattern not found.";
+      }
+      break;
+    }
+
     case 'i':
       edit_current_cell(sheet);
       break;
@@ -662,6 +748,7 @@ handle_event(struct sheet& sheet)
     {
       case mode::command:
       case mode::insert:
+      case mode::search_forward:
         insert_mode(sheet, event);
         break;
 

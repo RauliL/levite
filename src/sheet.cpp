@@ -23,8 +23,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <algorithm>
+
 #include <laskin/chrono.hpp>
 #include <laskin/error.hpp>
+#include <laskin/value.hpp>
 #include <peelo/unicode/encoding/utf8.hpp>
 #include <rapidcsv.h>
 
@@ -43,7 +46,7 @@ sheet::sheet()
       {
         if (const auto values = range->extract(*this))
         {
-          return laskin::value::make_vector(*values);
+          return *values;
         }
       }
       else if (const auto coords = coordinates::parse(name))
@@ -66,33 +69,33 @@ sheet::set(const coordinates& coords, const std::u32string& input)
 {
   if (peelo::number::is_valid(input))
   {
-    set(coords, laskin::value::make_number(input));
+    set(coords, laskin::value::parse_number(input));
   }
   else if (laskin::is_date(input))
   {
-    set(coords, laskin::value::make_date(input));
+    set(coords, laskin::parse_date(input));
   }
   else if (laskin::is_time(input))
   {
-    set(coords, laskin::value::make_time(input));
+    set(coords, laskin::parse_time(input));
   }
   else if (laskin::is_month(input))
   {
-    set(coords, laskin::value::make_month(input));
+    set(coords, laskin::parse_month(input));
   }
   else if (laskin::is_weekday(input))
   {
-    set(coords, laskin::value::make_weekday(input));
+    set(coords, laskin::parse_weekday(input));
   }
   else if (!input.compare(U"true"))
   {
-    set(coords, laskin::value::make_boolean(true));
+    set(coords, true);
   }
   else if (!input.compare(U"false"))
   {
-    set(coords, laskin::value::make_boolean(false));
+    set(coords, false);
   } else {
-    set(coords, laskin::value::make_string(input));
+    set(coords, laskin::value(input));
   }
 }
 
@@ -262,4 +265,89 @@ sheet::save(const std::filesystem::path& path, char separator)
   modified = false;
 
   return true;
+}
+
+bool
+sheet::find_literal_substring(
+  const std::u32string& needle,
+  const coordinates& cursor_pos,
+  bool forward,
+  coordinates& found
+) const
+{
+  if (needle.empty())
+  {
+    return false;
+  }
+
+  int max_col = 0;
+  int max_row = 0;
+
+  for (const auto& pair : grid)
+  {
+    if (pair.second)
+    {
+      const auto& cell = *pair.second;
+
+      max_col = std::max(max_col, cell.coordinates.x + 1);
+      max_row = std::max(max_row, cell.coordinates.y + 1);
+    }
+  }
+
+  max_col = std::max(max_col, cursor_pos.x + 1);
+  max_row = std::max(max_row, cursor_pos.y + 1);
+
+  const int total = max_col * max_row;
+
+  if (total <= 0)
+  {
+    return false;
+  }
+
+  auto cell_text = [this](int x, int y) -> std::u32string
+  {
+    if (const auto c = get({ x, y }))
+    {
+      return c->get_source();
+    }
+
+    return U"";
+  };
+
+  if (forward)
+  {
+    const int start = cursor_pos.y * max_col + cursor_pos.x + 1;
+
+    for (int step = 0; step < total; ++step)
+    {
+      const int lin = (start + step) % total;
+      const int x = lin % max_col;
+      const int y = lin / max_col;
+
+      if (cell_text(x, y).find(needle) != std::u32string::npos)
+      {
+        found = { x, y };
+
+        return true;
+      }
+    }
+  } else {
+    const int start = (cursor_pos.y * max_col + cursor_pos.x + total - 1) % total;
+
+    for (int step = 0; step < total; ++step)
+    {
+      const int lin = (start - step + total) % total;
+      const int x = lin % max_col;
+      const int y = lin / max_col;
+
+      if (cell_text(x, y).find(needle) != std::u32string::npos)
+      {
+        found = { x, y };
+
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
