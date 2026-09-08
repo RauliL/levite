@@ -27,10 +27,11 @@
 
 #include <peelo/unicode/encoding/utf8.hpp>
 
+#include <libterm/libterm.h>
+
 #include "./screen.hpp"
 #include "./setting.hpp"
 #include "./sheet.hpp"
-#include "./termbox2.h"
 #include "./utils.hpp"
 
 using command_callback = void(*)(
@@ -85,7 +86,7 @@ cmd_quit(
     message = U"File modified.";
     return;
   }
-  tb_shutdown();
+  lt_shutdown();
   std::exit(EXIT_SUCCESS);
 }
 

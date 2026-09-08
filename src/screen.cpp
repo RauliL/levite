@@ -26,12 +26,13 @@
 #include <cmath>
 #include <cstring>
 
+#include <libterm/libterm.h>
 #include <peelo/unicode/encoding/utf8.hpp>
 
+#include "./color.hpp"
 #include "./input.hpp"
 #include "./screen.hpp"
 #include "./setting.hpp"
-#include "./termbox2.h"
 
 static int xtop;
 static int xleft;
@@ -44,7 +45,7 @@ static inline int
 get_page_width()
 {
   return std::floor(
-    (static_cast<double>(tb_width() - 3)) /
+    (static_cast<double>(lt_width() - 3)) /
       setting::get_int(setting::key::cell_width)
   );
 }
@@ -52,7 +53,7 @@ get_page_width()
 static inline int
 get_page_height()
 {
-  return tb_height() - 3;
+  return lt_height() - 3;
 }
 
 bool
@@ -214,16 +215,16 @@ static void
 render_ui()
 {
   const auto cell_width = setting::get_int(setting::key::cell_width);
-  const auto foreground = setting::get_int(setting::key::foreground);
-  const auto background = setting::get_int(setting::key::background);
-  const auto width = tb_width();
-  const auto height = tb_height();
+  const auto foreground = color::to_lt_attr(setting::get_int(setting::key::foreground));
+  const auto background = color::to_lt_attr(setting::get_int(setting::key::background));
+  const auto width = lt_width();
+  const auto height = lt_height();
   const auto display_columns = (width - 3) / cell_width;
 
   for (int x = 0; x < width; ++x)
   {
-    tb_set_cell(x, 0, ' ', foreground, background);
-    tb_set_cell(x, height - 1, ' ', foreground, background);
+    lt_set_cell(x, 0, ' ', foreground, background);
+    lt_set_cell(x, height - 1, ' ', foreground, background);
   }
   for (
     int column = 0;
@@ -231,7 +232,7 @@ render_ui()
     ++column
   )
   {
-    tb_set_cell(
+    lt_set_cell(
       (column * cell_width) + 3 + (cell_width / 2),
       0,
       'A' + xleft + column,
@@ -245,7 +246,7 @@ render_ui()
     ++y, ++row
   )
   {
-    tb_printf(0, y + 1, foreground, background, "%3d", row + 1);
+    lt_printf(0, y + 1, foreground, background, "%3d", row + 1);
   }
 }
 
@@ -254,7 +255,7 @@ render_status(struct sheet& sheet)
 {
   using peelo::unicode::encoding::utf8::encode;
 
-  const auto height = tb_height();
+  const auto height = lt_height();
   const auto name = encode(cursor.to_string());
   const auto cell = sheet.get(cursor);
 
@@ -264,54 +265,54 @@ render_status(struct sheet& sheet)
     current_mode == mode::search_forward
   )
   {
-    tb_printf(
+    lt_printf(
       0,
       height - 1,
-      setting::get_int(setting::key::cursor_foreground),
-      setting::get_int(setting::key::cursor_background),
+      color::to_lt_attr(setting::get_int(setting::key::cursor_foreground)),
+      color::to_lt_attr(setting::get_int(setting::key::cursor_background)),
       "%s %s",
       name.c_str(),
       encode(input_buffer).c_str()
     );
-    tb_set_cursor(input_cursor + name.length() + 1, height - 1);
+    lt_set_cursor(input_cursor + name.length() + 1, height - 1);
   }
   else if (current_mode == mode::visual)
   {
-    tb_printf(
+    lt_printf(
       0,
       height - 1,
-      setting::get_int(setting::key::cursor_foreground),
-      setting::get_int(setting::key::cursor_background),
+      color::to_lt_attr(setting::get_int(setting::key::cursor_foreground)),
+      color::to_lt_attr(setting::get_int(setting::key::cursor_background)),
       "%s -- VISUAL --",
       name.c_str()
     );
   }
   else if (cell)
   {
-    tb_printf(
+    lt_printf(
       0,
       height - 1,
-      setting::get_int(setting::key::foreground),
-      setting::get_int(setting::key::background),
+      color::to_lt_attr(setting::get_int(setting::key::foreground)),
+      color::to_lt_attr(setting::get_int(setting::key::background)),
       "%s %s",
       name.c_str(),
       encode(cell->get_source()).c_str()
     );
   } else {
-    tb_printf(
+    lt_printf(
       0,
       height - 1,
-      setting::get_int(setting::key::foreground),
-      setting::get_int(setting::key::background),
+      color::to_lt_attr(setting::get_int(setting::key::foreground)),
+      color::to_lt_attr(setting::get_int(setting::key::background)),
       "%s",
       name.c_str()
     );
   }
-  tb_printf(
+  lt_printf(
     0,
     height - 2,
-    setting::get_int(setting::key::status_foreground),
-    setting::get_int(setting::key::status_background),
+    color::to_lt_attr(setting::get_int(setting::key::status_foreground)),
+    color::to_lt_attr(setting::get_int(setting::key::status_background)),
     (cell && cell->error ? *cell->error : encode(message)).c_str()
   );
 }
@@ -336,7 +337,7 @@ render_cell(
     result = value.as_string();
     if (result.length() > static_cast<unsigned int>(cell_width))
     {
-      result = result.substr(0, cell_width - 1);
+      result = result.substr(0, cell_width);
     }
     else if (result.length() < static_cast<unsigned int>(cell_width))
     {
@@ -346,7 +347,7 @@ render_cell(
     result = value.to_string();
     if (result.length() > static_cast<unsigned int>(cell_width))
     {
-      result = result.substr(0, cell_width - 1);
+      result = result.substr(0, cell_width);
     }
     else if (result.length() < static_cast<unsigned int>(cell_width))
     {
@@ -354,19 +355,19 @@ render_cell(
     }
   }
 
-  tb_print(
+  lt_print(
     (cell_width * (cell.coordinates.x - xleft)) + 3,
     cell.coordinates.y - xtop + 1,
-    setting::get_int(
+    color::to_lt_attr(setting::get_int(
       is_cursor   ? setting::key::cursor_foreground :
       is_selected ? setting::key::selection_foreground :
                     setting::key::cell_foreground
-    ),
-    setting::get_int(
+    )),
+    color::to_lt_attr(setting::get_int(
       is_cursor   ? setting::key::cursor_background :
       is_selected ? setting::key::selection_background :
                     setting::key::cell_background
-    ),
+    )),
     encode(result).c_str()
   );
 
@@ -380,8 +381,12 @@ static void
 render_sheet(struct sheet& sheet)
 {
   const auto cell_width = setting::get_int(setting::key::cell_width);
-  const auto cell_foreground = setting::get_int(setting::key::cell_foreground);
-  const auto cell_background = setting::get_int(setting::key::cell_background);
+  const auto cell_foreground = color::to_lt_attr(
+    setting::get_int(setting::key::cell_foreground)
+  );
+  const auto cell_background = color::to_lt_attr(
+    setting::get_int(setting::key::cell_background)
+  );
   const auto height = get_page_height();
   const auto width = get_page_width();
   bool cursor_rendered = false;
@@ -400,14 +405,14 @@ render_sheet(struct sheet& sheet)
       } else {
         const auto selected = is_in_selection(coords);
 
-        tb_print(
+        lt_print(
           (x * cell_width) + 3,
           y + 1,
           selected
-            ? setting::get_int(setting::key::selection_foreground)
+            ? color::to_lt_attr(setting::get_int(setting::key::selection_foreground))
             : cell_foreground,
           selected
-            ? setting::get_int(setting::key::selection_background)
+            ? color::to_lt_attr(setting::get_int(setting::key::selection_background))
             : cell_background,
           std::string(cell_width, ' ').c_str()
         );
@@ -417,11 +422,11 @@ render_sheet(struct sheet& sheet)
 
   if (!cursor_rendered)
   {
-    tb_print(
+    lt_print(
       (cell_width * (cursor.x - xleft)) + 3,
       cursor.y - xtop + 1,
-      setting::get_int(setting::key::cursor_foreground),
-      setting::get_int(setting::key::cursor_background),
+      color::to_lt_attr(setting::get_int(setting::key::cursor_foreground)),
+      color::to_lt_attr(setting::get_int(setting::key::cursor_background)),
       std::string(cell_width, ' ').c_str()
     );
   }
@@ -430,13 +435,13 @@ render_sheet(struct sheet& sheet)
 void
 render(struct sheet& sheet)
 {
-  tb_clear();
+  lt_clear();
 
   render_ui();
   render_status(sheet);
   render_sheet(sheet);
 
-  tb_present();
+  lt_present();
 }
 
 void
@@ -444,45 +449,45 @@ display_messages(const std::vector<std::u32string>& messages)
 {
   using peelo::unicode::encoding::utf8::encode;
 
-  const auto fg = setting::get_int(setting::key::foreground);
-  const auto bg = setting::get_int(setting::key::background);
-  const auto height = tb_height();
-  const auto width = tb_width();
+  const auto fg = color::to_lt_attr(setting::get_int(setting::key::foreground));
+  const auto bg = color::to_lt_attr(setting::get_int(setting::key::background));
+  const auto height = lt_height();
+  const auto width = lt_width();
   int y = 0;
-  tb_event event;
+  lt_event event;
 
-  tb_clear();
+  lt_clear();
 
   for (std::size_t i = 0; i < messages.size() && y < height - 1; ++i, ++y)
   {
-    tb_print(0, y, fg, bg, encode(messages[i]).c_str());
+    lt_print(0, y, fg, bg, encode(messages[i]).c_str());
   }
 
-  tb_print(
+  lt_print(
     0,
     height - 1,
-    setting::get_int(setting::key::status_foreground),
-    setting::get_int(setting::key::status_background),
+    color::to_lt_attr(setting::get_int(setting::key::status_foreground)),
+    color::to_lt_attr(setting::get_int(setting::key::status_background)),
     std::string(width, ' ').c_str()
   );
-  tb_print(
+  lt_print(
     0,
     height - 1,
-    setting::get_int(setting::key::status_foreground),
-    setting::get_int(setting::key::status_background),
+    color::to_lt_attr(setting::get_int(setting::key::status_foreground)),
+    color::to_lt_attr(setting::get_int(setting::key::status_background)),
     "Press ENTER or type command to continue"
   );
 
-  tb_present();
+  lt_present();
 
 
   for (;;)
   {
-    tb_poll_event(&event);
+    lt_poll_event(&event);
     if (
-      event.type == TB_EVENT_KEY && (
-        event.key == TB_KEY_ENTER ||
-        event.key == TB_KEY_ESC ||
+      event.type == LT_EVENT_KEY && (
+        event.key == LT_KEY_ENTER ||
+        event.key == LT_KEY_ESC ||
         event.ch == ':'
       )
     )

@@ -10,11 +10,14 @@ jobs:
         uses: actions/checkout@v6
       - name: Install MPFR
         run: sudo apt install -y libmpfr6 libmpfr-dev
-      - name: Build
-        uses: ashutoshvarma/action-cmake-build@master
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2.2.0
         with:
-          build-dir: ${{ runner.workspace }}/build
-          build-type: Release
+          cmake-version: '4.2.3'
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build
 
   build-macos:
     runs-on: macos-latest
@@ -25,9 +28,44 @@ jobs:
         run: brew install mpfr
       - name: Export homebrew paths
         uses: spezifisch/export-homebrew-build-paths@v1.0.0
-      - name: Build
-        uses: ashutoshvarma/action-cmake-build@master
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2.2.0
         with:
-          build-dir: ${{ runner.workspace }}/build
-          build-type: Release
-          configure-options: -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake-version: '4.2.3'
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - name: Build
+        run: cmake --build build
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2.2.0
+        with:
+          cmake-version: '4.2.3'
+      - name: Install MPFR
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-gmp
+            mingw-w64-ucrt-x86_64-make
+            mingw-w64-ucrt-x86_64-mpfr
+      - name: Configure
+        shell: msys2 {0}
+        run: |
+          CMAKE_BIN="$(ls -d /c/hostedtoolcache/windows/cmake/*/x64/cmake-*-windows-x86_64/bin | tail -1)"
+          export PATH="$CMAKE_BIN:$PATH"
+          cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release \
+            -DMPFR_ROOT="$(cygpath -m "$MINGW_PREFIX")"
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          CMAKE_BIN="$(ls -d /c/hostedtoolcache/windows/cmake/*/x64/cmake-*-windows-x86_64/bin | tail -1)"
+          export PATH="$CMAKE_BIN:$PATH"
+          cmake --build build

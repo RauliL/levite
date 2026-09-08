@@ -30,7 +30,9 @@
 
 #include "./color.hpp"
 #include "./setting.hpp"
-#include "./termbox2.h"
+#include <libterm/libterm.h>
+
+#include "./color.hpp"
 #include "./utils.hpp"
 
 namespace setting
@@ -110,17 +112,17 @@ namespace setting
 
   static std::unordered_map<key, variable> mapping =
   {
-    { key::background, { type::color, TB_GREEN } },
-    { key::cell_background, { type::color, TB_DEFAULT } },
-    { key::cell_foreground, { type::color, TB_GREEN } },
+    { key::background, { type::color, LT_GREEN } },
+    { key::cell_background, { type::color, LT_DEFAULT } },
+    { key::cell_foreground, { type::color, LT_GREEN } },
     { key::cell_width, { type::number, 10 } },
-    { key::cursor_background, { type::color, TB_GREEN | TB_BRIGHT } },
-    { key::cursor_foreground, { type::color, TB_BLACK } },
-    { key::foreground, { type::color, TB_BLACK } },
-    { key::selection_background, { type::color, TB_GREEN } },
-    { key::selection_foreground, { type::color, TB_BLACK } },
-    { key::status_background, { type::color, TB_DEFAULT } },
-    { key::status_foreground, { type::color, TB_DEFAULT } },
+    { key::cursor_background, { type::color, LT_GREEN | color::BRIGHT } },
+    { key::cursor_foreground, { type::color, LT_BLACK } },
+    { key::foreground, { type::color, LT_BLACK } },
+    { key::selection_background, { type::color, LT_GREEN } },
+    { key::selection_foreground, { type::color, LT_BLACK } },
+    { key::status_background, { type::color, LT_DEFAULT } },
+    { key::status_foreground, { type::color, LT_DEFAULT } },
   };
 
   static const std::unordered_map<std::u32string, key> name_mapping =

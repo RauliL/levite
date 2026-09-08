@@ -27,29 +27,31 @@
 #include <string>
 #include <unordered_map>
 
-#include "./termbox2.h"
+#include <libterm/libterm.h>
+
+#include "./color.hpp"
 
 static const std::unordered_map<std::u32string, int> mapping =
 {
-  { U"default", TB_DEFAULT },
-  { U"black", TB_BLACK },
-  { U"red", TB_RED },
-  { U"green", TB_GREEN },
-  { U"yellow", TB_YELLOW },
-  { U"blue", TB_BLUE },
-  { U"magenta", TB_MAGENTA },
-  { U"cyan", TB_CYAN },
-  { U"white", TB_WHITE },
+  { U"default", LT_DEFAULT },
+  { U"black", LT_BLACK },
+  { U"red", LT_RED },
+  { U"green", LT_GREEN },
+  { U"yellow", LT_YELLOW },
+  { U"blue", LT_BLUE },
+  { U"magenta", LT_MAGENTA },
+  { U"cyan", LT_CYAN },
+  { U"white", LT_WHITE },
 
-  { U"bright", TB_DEFAULT | TB_BRIGHT },
-  { U"bright-black", TB_BLACK | TB_BRIGHT },
-  { U"bright-red", TB_RED | TB_BRIGHT },
-  { U"bright-green", TB_GREEN | TB_BRIGHT },
-  { U"bright-yellow", TB_YELLOW | TB_BRIGHT },
-  { U"bright-blue", TB_BLUE | TB_BRIGHT },
-  { U"bright-magenta", TB_MAGENTA | TB_BRIGHT },
-  { U"bright-cyan", TB_CYAN | TB_BRIGHT },
-  { U"bright-white", TB_WHITE | TB_BRIGHT },
+  { U"bright", LT_DEFAULT | color::BRIGHT },
+  { U"bright-black", LT_BLACK | color::BRIGHT },
+  { U"bright-red", LT_RED | color::BRIGHT },
+  { U"bright-green", LT_GREEN | color::BRIGHT },
+  { U"bright-yellow", LT_YELLOW | color::BRIGHT },
+  { U"bright-blue", LT_BLUE | color::BRIGHT },
+  { U"bright-magenta", LT_MAGENTA | color::BRIGHT },
+  { U"bright-cyan", LT_CYAN | color::BRIGHT },
+  { U"bright-white", LT_WHITE | color::BRIGHT },
 };
 
 namespace color
@@ -79,5 +81,18 @@ namespace color
     }
 
     return U"unknown";
+  }
+
+  lt_attr
+  to_lt_attr(int color)
+  {
+    lt_attr attr = static_cast<lt_attr>(color & ~BRIGHT);
+
+    if (color & BRIGHT)
+    {
+      attr |= LT_BOLD;
+    }
+
+    return attr;
   }
 }
